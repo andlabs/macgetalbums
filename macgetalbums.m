@@ -5,7 +5,9 @@
 #import <mach/mach.h>
 #import <mach/mach_time.h>
 
-// TODO consider MediaLibrary?
+// TODO consider Scripting Bridge, then MediaLibrary?
+
+BOOL verbose = NO;
 
 const char *scriptSource =
 	"tell application \"iTunes\"\n"
@@ -23,12 +25,67 @@ const char *scriptSource =
 	"	allItems\n"
 	"end tell\n";
 
-// see also http://www.cocoabuilder.com/archive/cocoa/281785-extract-keys-values-from-usrf-record-type-nsappleeventdescriptor.html
-static NSDictionary *unpackRecord(NSAppleEventDescriptor *desc)
-{
-	NSMutableDictionary *dict;
-	NSInteger i, n;
+@interface TrackEnumerator : NSObject {
+	NSAppleScript *script;
+	NSAppleEventDescriptor *tracks;
+	uint64_t duration;
+}
+// TODO write dealloc function
+- (NSDictionary *)collectTracks;
+- (double)collectionDuration;
+- (NSInteger)nTracks;
+- (NSDictionary *)track:(NSInteger)i;
+@end
 
+@implementation TrackEnumerator
+
+- (NSDictionary *)collectTracks
+{
+	NSString *source;
+	NSDictionary *err;
+	uint64_t start, end;
+
+	source = [NSString stringWithUTF8String:scriptSource];
+	self->script = [[NSAppleScript alloc] initWithSource:source];
+
+	start = mach_absolute_time();
+	self->tracks = [self->script executeAndReturnError:&err];
+	end = mach_absolute_time();
+	self->duration = end - start;
+	if (self->tracks == nil)
+		return err;
+	return nil;
+}
+
+- (double)collectionDuration
+{
+	mach_timebase_info_data_t mt;
+	uint64_t dur;
+	double sec;
+
+	// should not fail; see http://stackoverflow.com/questions/31450517/what-are-the-possible-return-values-for-mach-timebase-info
+	// also true on 10.12 at least: https://opensource.apple.com/source/xnu/xnu-3789.1.32/libsyscall/wrappers/mach_timebase_info.c.auto.html + https://opensource.apple.com/source/xnu/xnu-3789.1.32/osfmk/kern/clock.c.auto.html
+	mach_timebase_info(&mt);
+	dur = self->duration;
+	dur = dur * mt.numer / mt.denom;
+	sec = ((double) dur) / ((double) NSEC_PER_SEC);
+	return sec;
+}
+
+- (NSInteger)nTracks
+{
+	return [self->tracks numberOfItems];
+}
+
+// see also http://www.cocoabuilder.com/archive/cocoa/281785-extract-keys-values-from-usrf-record-type-nsappleeventdescriptor.html
+- (NSDictionary *)track:(NSInteger)i
+{
+	NSAppleEventDescriptor *desc;
+	NSMutableDictionary *dict;
+	NSInteger n;
+
+	// TODO free desc afterward?
+	desc = [self->tracks descriptorAtIndex:(i + 1)];
 	// TODO figure out why this is needed; free desc afterward?
 	desc = [desc descriptorAtIndex:1];
 	dict = [NSMutableDictionary new];
@@ -56,15 +113,13 @@ static NSDictionary *unpackRecord(NSAppleEventDescriptor *desc)
 	return dict;
 }
 
+@end
+
 int main(int argc, char *argv[])
 {
-	BOOL verbose = NO;
-	NSString *source;
-	NSAppleScript *script;
-	NSAppleEventDescriptor *desc;
+	TrackEnumerator *e;
 	NSDictionary *err;
-	uint64_t start, end;
-	NSInteger i, trackCount;
+	NSInteger i, n;
 
 	switch (argc) {
 	case 1:
@@ -80,43 +135,25 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	source = [NSString stringWithUTF8String:scriptSource];
-	script = [[NSAppleScript alloc] initWithSource:source];
-
-	start = mach_absolute_time();
-	desc = [script executeAndReturnError:&err];
-	end = mach_absolute_time();
-	if (desc == nil) {
+	e = [TrackEnumerator new];
+	err = [e collectTracks];
+	if (err != nil) {
 		fprintf(stderr, "error: script execution failed: %s\n",
 			[[err description] UTF8String]);
 		return 1;
 	}
-	if (verbose) {
-		mach_timebase_info_data_t mt;
-		double sec;
-
-		// should not fail; see http://stackoverflow.com/questions/31450517/what-are-the-possible-return-values-for-mach-timebase-info
-		// also true on 10.12 at least: https://opensource.apple.com/source/xnu/xnu-3789.1.32/libsyscall/wrappers/mach_timebase_info.c.auto.html + https://opensource.apple.com/source/xnu/xnu-3789.1.32/osfmk/kern/clock.c.auto.html
-		mach_timebase_info(&mt);
-		end -= start;
-		end = end * mt.numer / mt.denom;
-		sec = ((double) end) / ((double) NSEC_PER_SEC);
-		printf("time to issue script: %gs\n", sec);
-	}
-
-	trackCount = [desc numberOfItems];
 	if (verbose)
-		printf("track count: %ld\n", (long) trackCount);
-	// note: 1-based
-	for (i = 1; i <= trackCount; i++) {
-		NSAppleEventDescriptor *track;
-		NSDictionary *data;
+		printf("time to issue script: %gs\n", [e collectionDuration]);
 
-		track = [desc descriptorAtIndex:i];
-		data = unpackRecord(track);
-		printf("%s\n", [[data description] UTF8String]);
-		[data release];// TODO
-		// TODO release track?
+	n = [e nTracks];
+	if (verbose)
+		printf("track count: %ld\n", (long) n);
+	for (i = 0; i < n; i++) {
+		NSDictionary *track;
+
+		track = [e track:i];
+		printf("%s\n", [[track description] UTF8String]);
+		[track release];// TODO
 	}
 
 	// TODO clean up?
