@@ -6,7 +6,7 @@
 #import <mach/mach.h>
 #import <mach/mach_time.h>
 
-// TODO consider Scripting Bridge, then MediaLibrary?
+// TODO consider Scripting Bridge, then MediaLibrary? (thanks mattstevens in irc.freenode.net #macdev)
 
 BOOL verbose = NO;
 
@@ -18,6 +18,7 @@ BOOL verbose = NO;
 
 @implementation Track
 
+// see also https://www.mikeash.com/pyblog/friday-qa-2010-06-18-implementing-equality-and-hashing.html (thanks mattstevens in irc.freenode.net #macdev)
 - (NSUInteger)hash
 {
 	return [self.Album hash] ^ [self.Artist hash];
@@ -179,16 +180,34 @@ int main(int argc, char *argv[])
 	if (verbose)
 		printf("time to issue script: %gs\n", [e collectionDuration]);
 
+	albums = [NSMutableSet new];
 	n = [e nTracks];
 	if (verbose)
 		printf("track count: %ld\n", (long) n);
 	for (i = 0; i < n; i++) {
 		Track *track;
+		Track *existing;
+		BOOL insert = YES;
 
 		track = [e track:i];
-		printf("%s\n", [[track description] UTF8String]);
-		[track release];// TODO
+		// only insert if either
+		// - this is a new album, or
+		// - the year on this track is earlier than the year on a prior track
+		existing = (Track *) [albums member:track];
+		if (existing != nil)
+			if (track.Year >= existing.Year)
+				insert = NO;
+			else
+				[albums removeObject:existing];
+		if (insert)
+			[albums addObject:track];
+		[track release];			// and free our copy
 	}
+
+	// TODO
+	[albums enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
+		printf("%s\n", [[obj description] UTF8String]);
+	}];
 
 	// TODO clean up?
 	return 0;
