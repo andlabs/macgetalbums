@@ -1,6 +1,7 @@
 // 8 june 2017
 #import <Cocoa/Cocoa.h>
 #import <stdio.h>
+#import <stdlib.h>
 #import <string.h>
 #import <mach/mach.h>
 #import <mach/mach_time.h>
@@ -8,6 +9,39 @@
 // TODO consider Scripting Bridge, then MediaLibrary?
 
 BOOL verbose = NO;
+
+@interface Track : NSObject
+@property (strong) NSString *Album;
+@property (strong) NSString *Artist;
+@property SInt32 Year;
+@end
+
+@implementation Track
+
+- (NSUInteger)hash
+{
+	return [self.Album hash] ^ [self.Artist hash];
+}
+
+- (BOOL)isEqual:(id)obj
+{
+	Track *b = (Track *) obj;
+
+	return [self.Album isEqual:b.Album] &&
+		[self.Artist isEqual:b.Artist];
+}
+
+- (NSString *)description
+{
+	return [NSString stringWithFormat:@"%d | %@ | %@",
+		(int) (self.Year),
+		self.Artist,
+		self.Album];
+}
+
+@end
+
+NSMutableSet *albums = nil;
 
 const char *scriptSource =
 	"tell application \"iTunes\"\n"
@@ -34,7 +68,7 @@ const char *scriptSource =
 - (NSDictionary *)collectTracks;
 - (double)collectionDuration;
 - (NSInteger)nTracks;
-- (NSDictionary *)track:(NSInteger)i;
+- (Track *)track:(NSInteger)i;
 @end
 
 @implementation TrackEnumerator
@@ -78,39 +112,39 @@ const char *scriptSource =
 }
 
 // see also http://www.cocoabuilder.com/archive/cocoa/281785-extract-keys-values-from-usrf-record-type-nsappleeventdescriptor.html
-- (NSDictionary *)track:(NSInteger)i
+- (Track *)track:(NSInteger)i
 {
 	NSAppleEventDescriptor *desc;
-	NSMutableDictionary *dict;
+	Track *track;
 	NSInteger n;
 
 	// TODO free desc afterward?
 	desc = [self->tracks descriptorAtIndex:(i + 1)];
 	// TODO figure out why this is needed; free desc afterward?
 	desc = [desc descriptorAtIndex:1];
-	dict = [NSMutableDictionary new];
+	track = [Track new];
 	n = [desc numberOfItems];
 	// note: 1-based
 	for (i = 1; i <= n; i += 2) {
 		NSAppleEventDescriptor *key, *value;
 		NSString *keystr;
-		id valueobj;
 
 		key = [desc descriptorAtIndex:i];
 		value = [desc descriptorAtIndex:(i + 1)];
 		keystr = [key stringValue];
-		if ([keystr isEqualToString:@"year"]) {
-			SInt32 v;
-
-			v = [value int32Value];
-			valueobj = [NSNumber numberWithInteger:((NSInteger) v)];
-			// TODO do not free valueobj
-		} else
-			valueobj = [value stringValue];
-		[dict setObject:valueobj forKey:keystr];
+		if ([keystr isEqual:@"year"])
+			track.Year = [value int32Value];
+		else if ([keystr isEqual:@"album"])
+			track.Album = [value stringValue];
+		else if ([keystr isEqual:@"artist"])
+			track.Artist = [value stringValue];
+		else {
+			fprintf(stderr, "unknown record key %s\n", [keystr UTF8String]);
+			exit(1);
+		}
 		// TODO release key, value, keystr, or valueobj?
 	}
-	return dict;
+	return track;
 }
 
 @end
@@ -149,7 +183,7 @@ int main(int argc, char *argv[])
 	if (verbose)
 		printf("track count: %ld\n", (long) n);
 	for (i = 0; i < n; i++) {
-		NSDictionary *track;
+		Track *track;
 
 		track = [e track:i];
 		printf("%s\n", [[track description] UTF8String]);
