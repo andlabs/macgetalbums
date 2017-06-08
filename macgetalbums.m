@@ -10,6 +10,54 @@
 
 BOOL verbose = NO;
 
+static mach_timebase_info_data_t timebase;
+
+@interface Timer : NSObject {
+	uint64_t start, end;
+}
+- (void)start;
+- (void)end;
+- (uint64_t)nanoseconds;
+- (double)seconds;
+@end
+
+@implementation Timer
+
++ (void)initialize
+{
+	// should not fail; see http://stackoverflow.com/questions/31450517/what-are-the-possible-return-values-for-mach-timebase-info
+	// also true on 10.12 at least: https://opensource.apple.com/source/xnu/xnu-3789.1.32/libsyscall/wrappers/mach_timebase_info.c.auto.html + https://opensource.apple.com/source/xnu/xnu-3789.1.32/osfmk/kern/clock.c.auto.html
+	mach_timebase_info(&timebase);
+}
+
+- (void)start
+{
+	self->start = mach_absolute_time();
+}
+
+- (void)end
+{
+	self->end = mach_absolute_time();
+}
+
+- (uint64_t)nanoseconds
+{
+	uint64_t duration;
+
+	duration = self->end - self->start;
+	return duration * timebase.numer / timebase.denom;
+}
+
+- (double)seconds
+{
+	uint64_t nsec;
+
+	nsec = [self nanoseconds];
+	return ((double) nsec) / ((double) NSEC_PER_SEC);
+}
+
+@end
+
 @interface Track : NSObject
 @property (strong) NSString *Album;
 @property (strong) NSString *Artist;
@@ -63,7 +111,7 @@ const char *scriptSource =
 @interface TrackEnumerator : NSObject {
 	NSAppleScript *script;
 	NSAppleEventDescriptor *tracks;
-	uint64_t duration;
+	double seconds;
 }
 // TODO write dealloc function
 - (NSDictionary *)collectTracks;
@@ -78,15 +126,17 @@ const char *scriptSource =
 {
 	NSString *source;
 	NSDictionary *err;
-	uint64_t start, end;
+	Timer *timer;
 
 	source = [NSString stringWithUTF8String:scriptSource];
 	self->script = [[NSAppleScript alloc] initWithSource:source];
 
-	start = mach_absolute_time();
+	timer = [Timer new];
+	[timer start];
 	self->tracks = [self->script executeAndReturnError:&err];
-	end = mach_absolute_time();
-	self->duration = end - start;
+	[timer end];
+	self->seconds = [timer seconds];
+	[timer release];
 	if (self->tracks == nil)
 		return err;
 	return nil;
@@ -94,17 +144,7 @@ const char *scriptSource =
 
 - (double)collectionDuration
 {
-	mach_timebase_info_data_t mt;
-	uint64_t dur;
-	double sec;
-
-	// should not fail; see http://stackoverflow.com/questions/31450517/what-are-the-possible-return-values-for-mach-timebase-info
-	// also true on 10.12 at least: https://opensource.apple.com/source/xnu/xnu-3789.1.32/libsyscall/wrappers/mach_timebase_info.c.auto.html + https://opensource.apple.com/source/xnu/xnu-3789.1.32/osfmk/kern/clock.c.auto.html
-	mach_timebase_info(&mt);
-	dur = self->duration;
-	dur = dur * mt.numer / mt.denom;
-	sec = ((double) dur) / ((double) NSEC_PER_SEC);
-	return sec;
+	return self->seconds;
 }
 
 - (NSInteger)nTracks
@@ -154,6 +194,7 @@ int main(int argc, char *argv[])
 {
 	TrackEnumerator *e;
 	NSDictionary *err;
+	Timer *timer;
 	NSInteger i, n;
 
 	switch (argc) {
@@ -181,6 +222,8 @@ int main(int argc, char *argv[])
 		printf("time to issue script: %gs\n", [e collectionDuration]);
 
 	albums = [NSMutableSet new];
+	timer = [Timer new];
+	[timer start];
 	n = [e nTracks];
 	if (verbose)
 		printf("track count: %ld\n", (long) n);
@@ -203,6 +246,10 @@ int main(int argc, char *argv[])
 			[albums addObject:track];
 		[track release];			// and free our copy
 	}
+	[timer end];
+	if (verbose)
+		printf("time to process tracks: %gs\n", [timer seconds]);
+	[timer release];
 
 	// TODO
 	[albums enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
