@@ -251,9 +251,17 @@ int main(int argc, char *argv[])
 		printf("time to process tracks: %gs\n", [timer seconds]);
 	[timer release];
 
-	// TODO
+	if (verbose)
+		printf("album count: %lu\n",
+			(unsigned long) [albums count]);
+	// TODO is tab safe to use?
 	[albums enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
-		printf("%s\n", [[obj description] UTF8String]);
+		Track *t = (Track *) obj;
+
+		printf("%d\t%s\t%s\n",
+			(int) (t.Year),
+			[t.Artist UTF8String],
+			[t.Album UTF8String]);
 	}];
 
 	// TODO clean up?
