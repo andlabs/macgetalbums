@@ -1,12 +1,14 @@
 // 8 june 2017
 #import <Cocoa/Cocoa.h>
+#import <ScriptingBridge/ScriptingBridge.h>
 #import <stdio.h>
 #import <stdlib.h>
 #import <string.h>
 #import <mach/mach.h>
 #import <mach/mach_time.h>
+#import "iTunes.h"
 
-// TODO consider Scripting Bridge, then MediaLibrary? (thanks mattstevens in irc.freenode.net #macdev)
+// TODO consider MediaLibrary? (thanks mattstevens in irc.freenode.net #macdev)
 
 // TODO Amy Winehouse's posthumous album is listed as 2002 when she was very much alive
 
@@ -64,7 +66,7 @@ static mach_timebase_info_data_t timebase;
 @interface Track : NSObject
 @property (strong) NSString *Album;
 @property (strong) NSString *Artist;
-@property SInt32 Year;
+@property NSInteger Year;
 @end
 
 @implementation Track
@@ -85,8 +87,8 @@ static mach_timebase_info_data_t timebase;
 
 - (NSString *)description
 {
-	return [NSString stringWithFormat:@"%d | %@ | %@",
-		(int) (self.Year),
+	return [NSString stringWithFormat:@"%ld | %@ | %@",
+		(long) (self.Year),
 		self.Artist,
 		self.Album];
 }
@@ -95,54 +97,32 @@ static mach_timebase_info_data_t timebase;
 
 NSMutableSet *albums = nil;
 
-const char *scriptSource =
-	"tell application \"iTunes\"\n"
-	"	set allItems to {}\n"
-	"	repeat with t in tracks\n"
-	"		set yr to year of t\n"
-	"		set ar to album artist of t\n"
-	"		if ar is \"\" then\n"
-	"			set ar to artist of t\n"
-	"		end if\n"
-	"		set al to album of t\n"
-	"		set newItem to {|year|:yr, |artist|:ar, |album|:al}\n"
-	"		set end of allItems to newItem\n"
-	"	end repeat\n"
-	"	allItems\n"
-	"end tell\n";
-
 @interface TrackEnumerator : NSObject {
-	NSAppleScript *script;
-	NSAppleEventDescriptor *tracks;
+	iTunesApplication *iTunes;
+	SBElementArray *tracks;
 	double seconds;
 }
 // TODO write dealloc function
-- (NSDictionary *)collectTracks;
+- (void)collectTracks;
 - (double)collectionDuration;
-- (NSInteger)nTracks;
-- (Track *)track:(NSInteger)i;
+- (NSUInteger)nTracks;
+- (Track *)track:(NSUInteger)i;
 @end
 
 @implementation TrackEnumerator
 
-- (NSDictionary *)collectTracks
+- (void)collectTracks
 {
-	NSString *source;
-	NSDictionary *err;
 	Timer *timer;
 
-	source = [NSString stringWithUTF8String:scriptSource];
-	self->script = [[NSAppleScript alloc] initWithSource:source];
+	self->iTunes = (iTunesApplication *) [SBApplication applicationWithBundleIdentifier:@"com.apple.iTunes"];
 
 	timer = [Timer new];
 	[timer start];
-	self->tracks = [self->script executeAndReturnError:&err];
+	self->tracks = [self->iTunes tracks];
 	[timer end];
 	self->seconds = [timer seconds];
 	[timer release];
-	if (self->tracks == nil)
-		return err;
-	return nil;
 }
 
 - (double)collectionDuration
@@ -150,44 +130,28 @@ const char *scriptSource =
 	return self->seconds;
 }
 
-- (NSInteger)nTracks
+- (NSUInteger)nTracks
 {
-	return [self->tracks numberOfItems];
+	return [self->tracks count];
 }
 
-// see also http://www.cocoabuilder.com/archive/cocoa/281785-extract-keys-values-from-usrf-record-type-nsappleeventdescriptor.html
-- (Track *)track:(NSInteger)i
+- (Track *)track:(NSUInteger)i
 {
-	NSAppleEventDescriptor *desc;
+	iTunesTrack *sbtrack;
 	Track *track;
-	NSInteger n;
 
-	// TODO free desc afterward?
-	desc = [self->tracks descriptorAtIndex:(i + 1)];
-	// TODO figure out why this is needed; free desc afterward?
-	desc = [desc descriptorAtIndex:1];
+	sbtrack = (iTunesTrack *) [self->tracks objectAtIndex:i];
 	track = [Track new];
-	n = [desc numberOfItems];
-	// note: 1-based
-	for (i = 1; i <= n; i += 2) {
-		NSAppleEventDescriptor *key, *value;
-		NSString *keystr;
-
-		key = [desc descriptorAtIndex:i];
-		value = [desc descriptorAtIndex:(i + 1)];
-		keystr = [key stringValue];
-		if ([keystr isEqual:@"year"])
-			track.Year = [value int32Value];
-		else if ([keystr isEqual:@"album"])
-			track.Album = [value stringValue];
-		else if ([keystr isEqual:@"artist"])
-			track.Artist = [value stringValue];
-		else {
-			fprintf(stderr, "unknown record key %s\n", [keystr UTF8String]);
-			exit(1);
-		}
-		// TODO release key, value, keystr, or valueobj?
+	track.Album = [sbtrack album];
+	track.Artist = [sbtrack albumArtist];
+	if (track.Artist == nil) {
+		fprintf(stderr, "TODO\n");
+		exit(1);
 	}
+	if ([track.Artist isEqual:@""])
+		track.Artist = [sbtrack artist];
+	track.Year = [sbtrack year];
+	// TODO release sbtrack?
 	return track;
 }
 
@@ -196,9 +160,8 @@ const char *scriptSource =
 int main(int argc, char *argv[])
 {
 	TrackEnumerator *e;
-	NSDictionary *err;
 	Timer *timer;
-	NSInteger i, n;
+	NSUInteger i, n;
 
 	switch (argc) {
 	case 1:
@@ -215,12 +178,7 @@ int main(int argc, char *argv[])
 	}
 
 	e = [TrackEnumerator new];
-	err = [e collectTracks];
-	if (err != nil) {
-		fprintf(stderr, "error: script execution failed: %s\n",
-			[[err description] UTF8String]);
-		return 1;
-	}
+	[e collectTracks];
 	if (verbose)
 		printf("time to issue script: %gs\n", [e collectionDuration]);
 
@@ -261,8 +219,8 @@ int main(int argc, char *argv[])
 	[albums enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
 		Track *t = (Track *) obj;
 
-		printf("%d\t%s\t%s\n",
-			(int) (t.Year),
+		printf("%ld\t%s\t%s\n",
+			(long) (t.Year),
 			[t.Artist UTF8String],
 			[t.Album UTF8String]);
 	}];
