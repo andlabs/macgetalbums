@@ -187,6 +187,7 @@ int main(int argc, char *argv[])
 	[timer start];
 	n = [e nTracks];
 	if (verbose)
+		// TODO with Scripting Bridge this is ~1e-5 seconds?! should we include the SBApplication constructor?
 		printf("track count: %ld\n", (long) n);
 	for (i = 0; i < n; i++) {
 		Track *track;
