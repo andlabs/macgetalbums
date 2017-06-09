@@ -8,6 +8,8 @@
 
 // TODO consider Scripting Bridge, then MediaLibrary? (thanks mattstevens in irc.freenode.net #macdev)
 
+// TODO Amy Winehouse's posthumous album is listed as 2002 when she was very much alive
+
 BOOL verbose = NO;
 
 static mach_timebase_info_data_t timebase;
