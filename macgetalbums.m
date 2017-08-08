@@ -1,12 +1,5 @@
 // 8 june 2017
-#import <Cocoa/Cocoa.h>
-#import <ScriptingBridge/ScriptingBridge.h>
-#import <stdio.h>
-#import <stdlib.h>
-#import <string.h>
-#import <mach/mach.h>
-#import <mach/mach_time.h>
-#import "iTunes.h"
+#import "macgetalbums.h"
 
 // TODO consider MediaLibrary? (thanks mattstevens in irc.freenode.net #macdev)
 

@@ -14,6 +14,8 @@ static const struct {
 	{ nil, nil, 0 },
 };
 
+// TODO find a better name?
+// TODO rearrange parameters
 NSInteger handleOverrides(NSString *album, NSString *artist, NSInteger year)
 {
 	int i;

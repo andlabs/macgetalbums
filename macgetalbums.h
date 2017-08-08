@@ -1,0 +1,24 @@
+// 7 august 2017
+// TODO move file-specific headers out of here
+#import <Cocoa/Cocoa.h>
+#import <ScriptingBridge/ScriptingBridge.h>
+#import <stdio.h>
+#import <stdlib.h>
+#import <string.h>
+#import <mach/mach.h>
+#import <mach/mach_time.h>
+// TODO make this a relative path instead of using -I
+#import "iTunes.h"
+
+// timer.m
+@interface Timer : NSObject {
+	uint64_t start, end;
+}
+- (void)start;
+- (void)end;
+- (uint64_t)nanoseconds;
+- (double)seconds;
+@end
+
+// overrides.m
+extern NSInteger handleOverrides(NSString *album, NSString *artist, NSInteger year);

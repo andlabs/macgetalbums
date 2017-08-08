@@ -4,14 +4,6 @@
 static mach_timebase_info_data_t timebase;
 
 // TODO consider https://developer.apple.com/documentation/foundation/nsprocessinfo/1414553-systemuptime?language=objc; it may not be as precise on the super-tight end, but it's in seconds and we won't need this class (thanks mikeash in irc.freenode.net #macdev)
-@interface Timer : NSObject {
-	uint64_t start, end;
-}
-- (void)start;
-- (void)end;
-- (uint64_t)nanoseconds;
-- (double)seconds;
-@end
 
 @implementation Timer
 
