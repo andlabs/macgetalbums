@@ -25,11 +25,11 @@ LDFLAGS = \
 	-framework Foundation \
 	-framework ScriptingBridge
 
-all: $(OFILES)
-	clang -o $@ $< $(LDFLAGS)
+$(OUT): $(OFILES)
+	clang -o $@ $(OFILES) $(LDFLAGS)
 
 %.o: %.m $(HFILES)
-	clang -o $@ $< $(MFLAGS)
+	clang -c -o $@ $< $(MFLAGS)
 
 iTunes.h:
 	sdef /Applications/iTunes.app | sdp -fh --basename iTunes
