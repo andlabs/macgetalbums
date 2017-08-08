@@ -3,10 +3,12 @@
 
 // TODO consider MediaLibrary? (thanks mattstevens in irc.freenode.net #macdev)
 
-// TODO Amy Winehouse's posthumous album is listed as 2002 when she was very much alive
+// TODO rename to main.m?
 
+// TODO make getopt()-based
 BOOL verbose = NO;
 
+// TODO reverse the order of these?
 @interface Track : NSObject
 @property (strong) NSString *Album;
 @property (strong) NSString *Artist;
@@ -95,6 +97,7 @@ NSMutableSet *albums = nil;
 	if ([track.Artist isEqual:@""])
 		track.Artist = [sbtrack artist];
 	track.Year = [sbtrack year];
+	track.Year = handleOverrides(track.Album, track.Artist, track.Year);
 	// TODO release sbtrack?
 	return track;
 }

@@ -15,7 +15,7 @@ static const struct {
 };
 
 // TODO find a better name?
-// TODO rearrange parameters
+// TODO rearrange parameters if we rearrange Track's fields
 NSInteger handleOverrides(NSString *album, NSString *artist, NSInteger year)
 {
 	int i;
