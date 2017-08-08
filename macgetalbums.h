@@ -1,13 +1,12 @@
 // 7 august 2017
 // TODO move file-specific headers out of here
-#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
 #import <ScriptingBridge/ScriptingBridge.h>
 #import <stdio.h>
 #import <stdlib.h>
 #import <string.h>
 #import <mach/mach.h>
 #import <mach/mach_time.h>
-// TODO make this a relative path instead of using -I
 #import "iTunes.h"
 
 // timer.m
