@@ -5,7 +5,6 @@
 
 // TODO rename to main.m?
 
-// TODO make getopt()-based
 BOOL verbose = NO;
 
 NSMutableSet *albums = nil;
@@ -73,25 +72,40 @@ NSMutableSet *albums = nil;
 
 @end
 
+const char *argv0;
+
+void usage(void)
+{
+	fprintf(stderr, "usage: %s [-hv]\n", argv0);
+	fprintf(stderr, "  -h - show this help\n");
+	fprintf(stderr, "  -v - print verbose output\n");
+	exit(1);
+}
+
 int main(int argc, char *argv[])
 {
 	TrackEnumerator *e;
 	Timer *timer;
 	NSUInteger i, n;
+	int c;
 
-	switch (argc) {
-	case 1:
-		break;
-	case 2:
-		if (strcmp(argv[1], "-v") == 0) {
+	argv0 = argv[0];
+	while ((c = getopt(argc, argv, ":hv")) != -1)
+		switch (c) {
+		case 'v':
 			verbose = YES;
 			break;
+		case '?':
+			fprintf(stderr, "error: unknown option -%c\n", optopt);
+			// fall through
+		case 'h':
+		default:
+			usage();
 		}
-		// fall through
-	default:
-		fprintf(stderr, "usage: %s [-v]\n", argv[0]);
-		return 1;
-	}
+	argc -= optind;
+	argv += optind;
+	if (argc != 0)
+		usage();
 
 	e = [TrackEnumerator new];
 	[e collectTracks];

@@ -6,6 +6,7 @@
 #import <stdlib.h>
 #import <string.h>
 #import <math.h>
+#import <unistd.h>
 #import <mach/mach.h>
 #import <mach/mach_time.h>
 #import "iTunes.h"
