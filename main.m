@@ -3,8 +3,6 @@
 
 // TODO consider MediaLibrary? (thanks mattstevens in irc.freenode.net #macdev)
 
-// TODO rename to main.m?
-
 BOOL verbose = NO;
 
 NSMutableSet *albums = nil;

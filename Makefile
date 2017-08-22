@@ -4,7 +4,7 @@ OUT = macgetalbums
 
 MFILES = \
 	item.m \
-	macgetalbums.m \
+	main.m \
 	timer.m
 
 HFILES = \
