@@ -60,19 +60,21 @@ int main(int argc, char *argv[])
 		printf("track count: %ld\n", (long) [tracks count]);
 	for (Item *track in tracks) {
 		Item *existing;
-		BOOL insert = YES;
 
-		// only insert if either
-		// - this is a new album, or
-		// - the year on this track is earlier than the year on a prior track
+		// If the album is already in the set, update the year and
+		// the length; otherwise, just add the track to start off this
+		// new album (effectively turning a track Item into an
+		// album Item).
 		existing = (Item *) [albums member:track];
-		if (existing != nil)
-			if (track.Year >= existing.Year)
-				insert = NO;
-			else
-				[albums removeObject:existing];
-		if (insert)
-			[albums addObject:track];
+		if (existing != nil) {
+			// We want to take the earliest release date, to
+			// reflect the original release of this album.
+			if (existing.Year > track.Year)
+				existing.Year = track.Year;
+			existing.Length += track.Length;
+			continue;
+		}
+		[albums addObject:track];
 	}
 	[timer end];
 	if (verbose)
@@ -84,6 +86,7 @@ int main(int argc, char *argv[])
 		printf("album count: %lu\n",
 			(unsigned long) [albums count]);
 	// TODO is tab safe to use?
+	// TODO switch to foreach
 	[albums enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
 		Item *t = (Item *) obj;
 
