@@ -8,11 +8,10 @@
 // TODO make getopt()-based
 BOOL verbose = NO;
 
-// TODO reverse the order of these?
 @interface Track : NSObject
-@property (strong) NSString *Album;
-@property (strong) NSString *Artist;
 @property NSInteger Year;
+@property (strong) NSString *Artist;
+@property (strong) NSString *Album;
 @property double Length;
 @end
 
@@ -28,8 +27,8 @@ BOOL verbose = NO;
 {
 	Track *b = (Track *) obj;
 
-	return [self.Album isEqual:b.Album] &&
-		[self.Artist isEqual:b.Artist];
+	return [self.Artist isEqual:b.Artist] &&
+		[self.Album isEqual:b.Album];
 }
 
 - (NSString *)description
@@ -89,7 +88,7 @@ NSMutableSet *albums = nil;
 
 	sbtrack = (iTunesTrack *) [self->tracks objectAtIndex:i];
 	track = [Track new];
-	track.Album = [sbtrack album];
+	track.Year = [sbtrack year];
 	track.Artist = [sbtrack albumArtist];
 	if (track.Artist == nil) {
 		fprintf(stderr, "TODO\n");
@@ -97,7 +96,7 @@ NSMutableSet *albums = nil;
 	}
 	if ([track.Artist isEqual:@""])
 		track.Artist = [sbtrack artist];
-	track.Year = [sbtrack year];
+	track.Album = [sbtrack album];
 	track.Year = handleOverrides(track.Album, track.Artist, track.Year);
 	track.Length = [sbtrack duration];
 	// TODO release sbtrack?
