@@ -13,6 +13,7 @@ BOOL verbose = NO;
 @property (strong) NSString *Album;
 @property (strong) NSString *Artist;
 @property NSInteger Year;
+@property double Length;
 @end
 
 @implementation Track
@@ -98,6 +99,7 @@ NSMutableSet *albums = nil;
 		track.Artist = [sbtrack artist];
 	track.Year = [sbtrack year];
 	track.Year = handleOverrides(track.Album, track.Artist, track.Year);
+	track.Length = [sbtrack duration];
 	// TODO release sbtrack?
 	return track;
 }
