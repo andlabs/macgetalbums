@@ -8,69 +8,6 @@ BOOL showLengths = NO;
 
 NSMutableSet *albums = nil;
 
-@interface TrackEnumerator : NSObject {
-	iTunesApplication *iTunes;
-	SBElementArray *tracks;
-	double seconds;
-}
-// TODO write dealloc function
-- (void)collectTracks;
-- (double)collectionDuration;
-- (NSUInteger)nTracks;
-- (Item *)track:(NSUInteger)i;
-@end
-
-@implementation TrackEnumerator
-
-- (void)collectTracks
-{
-	Timer *timer;
-
-	self->iTunes = (iTunesApplication *) [SBApplication applicationWithBundleIdentifier:@"com.apple.iTunes"];
-
-	timer = [Timer new];
-	[timer start];
-	self->tracks = [self->iTunes tracks];
-	[timer end];
-	self->seconds = [timer seconds];
-	[timer release];
-}
-
-- (double)collectionDuration
-{
-	return self->seconds;
-}
-
-- (NSUInteger)nTracks
-{
-	return [self->tracks count];
-}
-
-// TODO fix up the names
-- (Item *)track:(NSUInteger)i
-{
-	iTunesTrack *sbtrack;
-	Item *track;
-
-	sbtrack = (iTunesTrack *) [self->tracks objectAtIndex:i];
-	track = [Item new];
-	track.Year = [sbtrack year];
-	track.Artist = [sbtrack albumArtist];
-	if (track.Artist == nil) {
-		fprintf(stderr, "TODO\n");
-		exit(1);
-	}
-	if ([track.Artist isEqual:@""])
-		track.Artist = [sbtrack artist];
-	track.Album = [sbtrack album];
-	[track handleOverrides];
-	track.Length = [sbtrack duration];
-	// TODO release sbtrack?
-	return track;
-}
-
-@end
-
 const char *argv0;
 
 void usage(void)

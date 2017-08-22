@@ -32,3 +32,6 @@
 // TODO make this automatic, possibly part of init
 - (void)handleOverrides;
 @end
+
+// collect.m
+extern NSArray *collectAlbums(double *duration);

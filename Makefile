@@ -3,6 +3,7 @@
 OUT = macgetalbums
 
 MFILES = \
+	collect.m \
 	item.m \
 	main.m \
 	timer.m
