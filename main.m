@@ -4,6 +4,7 @@
 // TODO consider MediaLibrary? (thanks mattstevens in irc.freenode.net #macdev)
 
 BOOL verbose = NO;
+BOOL showLengths = NO;
 
 NSMutableSet *albums = nil;
 
@@ -74,8 +75,9 @@ const char *argv0;
 
 void usage(void)
 {
-	fprintf(stderr, "usage: %s [-hv]\n", argv0);
+	fprintf(stderr, "usage: %s [-hlv]\n", argv0);
 	fprintf(stderr, "  -h - show this help\n");
+	fprintf(stderr, "  -l - show album lengths\n");
 	fprintf(stderr, "  -v - print verbose output\n");
 	exit(1);
 }
@@ -88,10 +90,14 @@ int main(int argc, char *argv[])
 	int c;
 
 	argv0 = argv[0];
-	while ((c = getopt(argc, argv, ":hv")) != -1)
+	while ((c = getopt(argc, argv, ":hlv")) != -1)
 		switch (c) {
 		case 'v':
+			// TODO rename to -d for debug?
 			verbose = YES;
+			break;
+		case 'l':
+			showLengths = YES;
 			break;
 		case '?':
 			fprintf(stderr, "error: unknown option -%c\n", optopt);
@@ -148,10 +154,14 @@ int main(int argc, char *argv[])
 	[albums enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
 		Item *t = (Item *) obj;
 
-		printf("%ld\t%s\t%s\n",
+		printf("%ld\t%s\t%s",
 			(long) (t.Year),
 			[t.Artist UTF8String],
 			[t.Album UTF8String]);
+		if (showLengths)
+			printf("\t%s",
+				[[t lengthString] UTF8String]);
+		printf("\n");
 	}];
 
 	// TODO clean up?
