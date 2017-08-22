@@ -19,5 +19,5 @@
 - (double)seconds;
 @end
 
-// overrides.m
-extern NSInteger handleOverrides(NSString *album, NSString *artist, NSInteger year);
+// item.m
+extern NSInteger handleOverrides(NSInteger year, NSString *artist, NSString *album);

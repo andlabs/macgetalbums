@@ -8,6 +8,7 @@
 // TODO make getopt()-based
 BOOL verbose = NO;
 
+// TODO rename to Item
 @interface Track : NSObject
 @property NSInteger Year;
 @property (strong) NSString *Artist;
