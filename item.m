@@ -11,6 +11,13 @@ static const struct {
 	// reflect the actual release date.
 	{ 2011, @"Amy Winehouse", @"Lioness: Hidden Treasures" },
 
+	// Some songs say 1982 (the year the film was released),
+	// others say 1994 (the year the first disc was released);
+	// neither of these might be accurate for each particular song.
+	// Let's go with the year this particular release was released
+	// (the 25th anniversary of the original film's release).
+	{ 2007, @"Vangelis", @"Blade Runner Trilogy" },
+
 	{ 0, nil, nil },
 };
 
