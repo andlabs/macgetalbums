@@ -34,4 +34,4 @@
 @end
 
 // collect.m
-extern NSArray *collectAlbums(double *duration);
+extern NSArray *collectTracks(double *duration);

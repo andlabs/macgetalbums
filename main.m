@@ -21,9 +21,9 @@ void usage(void)
 
 int main(int argc, char *argv[])
 {
-	TrackEnumerator *e;
+	NSArray *tracks;
+	double duration;
 	Timer *timer;
-	NSUInteger i, n;
 	int c;
 
 	argv0 = argv[0];
@@ -48,24 +48,20 @@ int main(int argc, char *argv[])
 	if (argc != 0)
 		usage();
 
-	e = [TrackEnumerator new];
-	[e collectTracks];
+	tracks = collectTracks(&duration);
 	if (verbose)
-		printf("time to issue script: %gs\n", [e collectionDuration]);
+		printf("time to issue script: %gs\n", duration);
 
 	albums = [NSMutableSet new];
 	timer = [Timer new];
 	[timer start];
-	n = [e nTracks];
 	if (verbose)
 		// TODO with Scripting Bridge this is ~1e-5 seconds?! should we include the SBApplication constructor?
-		printf("track count: %ld\n", (long) n);
-	for (i = 0; i < n; i++) {
-		Item *track;
+		printf("track count: %ld\n", (long) [tracks count]);
+	for (Item *track in tracks) {
 		Item *existing;
 		BOOL insert = YES;
 
-		track = [e track:i];
 		// only insert if either
 		// - this is a new album, or
 		// - the year on this track is earlier than the year on a prior track
@@ -77,12 +73,12 @@ int main(int argc, char *argv[])
 				[albums removeObject:existing];
 		if (insert)
 			[albums addObject:track];
-		[track release];			// and free our copy
 	}
 	[timer end];
 	if (verbose)
 		printf("time to process tracks: %gs\n", [timer seconds]);
 	[timer release];
+	[tracks release];
 
 	if (verbose)
 		printf("album count: %lu\n",

@@ -20,7 +20,7 @@ static Item *trackToItem(iTunesTrack *track)
 	return item;
 }
 
-NSArray *collectAlbums(double *duration)
+NSArray *collectTracks(double *duration)
 {
 	iTunesApplication *iTunes;
 	SBElementArray *tracks;
@@ -37,8 +37,7 @@ NSArray *collectAlbums(double *duration)
 		*duration = [timer seconds];
 	[timer release];
 
-	items = [[NSMutableArray alloc] initWithCa
-pacity:[tracks count]];
+	items = [[NSMutableArray alloc] initWithCapacity:[tracks count]];
 	// SBElementArray is a subclass of NSMutableArray so this will work
 	for (iTunesTrack *track in tracks) {
 		Item *item;
