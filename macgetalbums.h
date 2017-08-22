@@ -5,6 +5,7 @@
 #import <stdio.h>
 #import <stdlib.h>
 #import <string.h>
+#import <math.h>
 #import <mach/mach.h>
 #import <mach/mach_time.h>
 #import "iTunes.h"
@@ -20,4 +21,13 @@
 @end
 
 // item.m
-extern NSInteger handleOverrides(NSInteger year, NSString *artist, NSString *album);
+@interface Item : NSObject
+// TODO make lowercase?
+@property NSInteger Year;
+@property (strong) NSString *Artist;
+@property (strong) NSString *Album;
+@property double Length;
+- (NSString *)lengthString;
+// TODO make this automatic, possibly part of init
+- (void)handleOverrides;
+@end

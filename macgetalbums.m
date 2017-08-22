@@ -8,40 +8,6 @@
 // TODO make getopt()-based
 BOOL verbose = NO;
 
-// TODO rename to Item
-@interface Track : NSObject
-@property NSInteger Year;
-@property (strong) NSString *Artist;
-@property (strong) NSString *Album;
-@property double Length;
-@end
-
-@implementation Track
-
-// see also https://www.mikeash.com/pyblog/friday-qa-2010-06-18-implementing-equality-and-hashing.html (thanks mattstevens in irc.freenode.net #macdev)
-- (NSUInteger)hash
-{
-	return [self.Album hash] ^ [self.Artist hash];
-}
-
-- (BOOL)isEqual:(id)obj
-{
-	Track *b = (Track *) obj;
-
-	return [self.Artist isEqual:b.Artist] &&
-		[self.Album isEqual:b.Album];
-}
-
-- (NSString *)description
-{
-	return [NSString stringWithFormat:@"%ld | %@ | %@",
-		(long) (self.Year),
-		self.Artist,
-		self.Album];
-}
-
-@end
-
 NSMutableSet *albums = nil;
 
 @interface TrackEnumerator : NSObject {
@@ -53,7 +19,7 @@ NSMutableSet *albums = nil;
 - (void)collectTracks;
 - (double)collectionDuration;
 - (NSUInteger)nTracks;
-- (Track *)track:(NSUInteger)i;
+- (Item *)track:(NSUInteger)i;
 @end
 
 @implementation TrackEnumerator
@@ -82,13 +48,14 @@ NSMutableSet *albums = nil;
 	return [self->tracks count];
 }
 
-- (Track *)track:(NSUInteger)i
+// TODO fix up the names
+- (Item *)track:(NSUInteger)i
 {
 	iTunesTrack *sbtrack;
-	Track *track;
+	Item *track;
 
 	sbtrack = (iTunesTrack *) [self->tracks objectAtIndex:i];
-	track = [Track new];
+	track = [Item new];
 	track.Year = [sbtrack year];
 	track.Artist = [sbtrack albumArtist];
 	if (track.Artist == nil) {
@@ -98,7 +65,7 @@ NSMutableSet *albums = nil;
 	if ([track.Artist isEqual:@""])
 		track.Artist = [sbtrack artist];
 	track.Album = [sbtrack album];
-	track.Year = handleOverrides(track.Album, track.Artist, track.Year);
+	[track handleOverrides];
 	track.Length = [sbtrack duration];
 	// TODO release sbtrack?
 	return track;
@@ -139,15 +106,15 @@ int main(int argc, char *argv[])
 		// TODO with Scripting Bridge this is ~1e-5 seconds?! should we include the SBApplication constructor?
 		printf("track count: %ld\n", (long) n);
 	for (i = 0; i < n; i++) {
-		Track *track;
-		Track *existing;
+		Item *track;
+		Item *existing;
 		BOOL insert = YES;
 
 		track = [e track:i];
 		// only insert if either
 		// - this is a new album, or
 		// - the year on this track is earlier than the year on a prior track
-		existing = (Track *) [albums member:track];
+		existing = (Item *) [albums member:track];
 		if (existing != nil)
 			if (track.Year >= existing.Year)
 				insert = NO;
@@ -167,7 +134,7 @@ int main(int argc, char *argv[])
 			(unsigned long) [albums count]);
 	// TODO is tab safe to use?
 	[albums enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
-		Track *t = (Track *) obj;
+		Item *t = (Item *) obj;
 
 		printf("%ld\t%s\t%s\n",
 			(long) (t.Year),

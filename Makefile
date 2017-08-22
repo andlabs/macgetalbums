@@ -3,8 +3,8 @@
 OUT = macgetalbums
 
 MFILES = \
+	item.m \
 	macgetalbums.m \
-	overrides.m \
 	timer.m
 
 HFILES = \
