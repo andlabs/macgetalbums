@@ -1,8 +1,7 @@
 // 8 june 2017
 #import "macgetalbums.h"
 
-// TODO consider MediaLibrary? (thanks mattstevens in irc.freenode.net #macdev)
-
+// TODO prefix these with opt?
 BOOL verbose = NO;
 BOOL showLengths = NO;
 
