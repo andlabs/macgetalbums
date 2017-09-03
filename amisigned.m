@@ -37,6 +37,7 @@ int main(void)
 	if (err != errSecSuccess)
 		die("error getting signing data for self", err);
 	err = SecCodeCheckValidity(me, kSecCSDefaultFlags, NULL);
+	// TODO is the correct freeing function CFRelease()?
 	switch (err) {
 	case errSecSuccess:
 		printf("yes we are signed\n");
