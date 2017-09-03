@@ -37,7 +37,8 @@ int main(void)
 	if (err != errSecSuccess)
 		die("error getting signing data for self", err);
 	err = SecCodeCheckValidity(me, kSecCSDefaultFlags, NULL);
-	// TODO is the correct freeing function CFRelease()?
+	// this is correct for SecCodeRefs (it bridges to id according to Security/CFCommon.h); thanks Zorg and gwynne in irc.freenode.net/#macdev
+	CFRelease(me);
 	switch (err) {
 	case errSecSuccess:
 		printf("yes we are signed\n");
