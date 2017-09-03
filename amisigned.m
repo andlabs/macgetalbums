@@ -4,6 +4,8 @@
 #import <stdio.h>
 #import <stdlib.h>
 
+// thanks to https://oleb.net/blog/2012/02/checking-code-signing-and-sandboxing-status-in-code/ for pointing me toward the Code Signing Services
+
 void die(const char *msg, OSStatus err)
 {
 	CFStringRef str;
