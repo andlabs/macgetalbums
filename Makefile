@@ -3,6 +3,7 @@
 OUT = macgetalbums
 
 MFILES = \
+	amisigned.m \
 	collect.m \
 	item.m \
 	main.m \

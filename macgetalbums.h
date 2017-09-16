@@ -1,7 +1,9 @@
 // 7 august 2017
 // TODO move file-specific headers out of here
+#import <CoreFoundation/CoreFoundation.h>
 #import <Foundation/Foundation.h>
 #import <ScriptingBridge/ScriptingBridge.h>
+#import <Security/Security.h>
 #import <stdio.h>
 #import <stdlib.h>
 #import <string.h>
@@ -35,3 +37,6 @@
 
 // collect.m
 extern NSArray *collectTracks(double *duration);
+
+// amisigned.m
+extern BOOL amISigned(OSStatus *err);

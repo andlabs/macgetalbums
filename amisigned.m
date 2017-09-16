@@ -1,52 +1,30 @@
 // 2 september 2017
-#import <CoreFoundation/CoreFoundation.h>
-#import <Security/Security.h>
-#import <stdio.h>
-#import <stdlib.h>
+#import "macgetalbums.h"
 
 // thanks to https://oleb.net/blog/2012/02/checking-code-signing-and-sandboxing-status-in-code/ for pointing me toward the Code Signing Services
 
-void die(const char *msg, OSStatus err)
-{
-	CFStringRef str;
-	Boolean canString;
-
-	canString = false;
-	str = SecCopyErrorMessageString(err, NULL);
-	if (str != NULL) {
-		const char *p;
-
-		p = CFStringGetCStringPtr(str, kCFStringEncodingUTF8);
-		if (p != NULL) {
-			fprintf(stderr, "%s: %s (%d)\n", msg, p, err);
-			canString = true;
-		}
-		CFRelease(str);
-	}
-	if (!canString)
-		fprintf(stderr, "%s: %d\n", msg, err);
-	exit(1);
-}
-
-int main(void)
+// note: assumes all failures mean unsigned
+BOOL amISigned(OSStatus *err)
 {
 	SecCodeRef me;
-	OSStatus err;
+	OSStatus xerr;
 
-	err = SecCodeCopySelf(kSecCSDefaultFlags, &me);
-	if (err != errSecSuccess)
-		die("error getting signing data for self", err);
-	err = SecCodeCheckValidity(me, kSecCSDefaultFlags, NULL);
+	if (err == NULL)
+		err = &xerr;
+	*err = SecCodeCopySelf(kSecCSDefaultFlags, &me);
+	if (*err != errSecSuccess)
+		return NO;
+	*err = SecCodeCheckValidity(me, kSecCSDefaultFlags, NULL);
 	// this is correct for SecCodeRefs (it bridges to id according to Security/CFCommon.h); thanks Zorg and gwynne in irc.freenode.net/#macdev
 	CFRelease(me);
-	switch (err) {
+	switch (*err) {
 	case errSecSuccess:
-		printf("yes we are signed\n");
-		return 0;
+		return YES;
 	case errSecCSUnsigned:
-		printf("no we are not signed\n");
-		return 0;
+		// this isn't really an error so return no error
+		*err = errSecSuccess;
+		// fall out
+	// assume any other error means some failure -> not signed
 	}
-	die("error determining whether we are signed", err);
-	return 1;		// to appease compiler
+	return NO;
 }
