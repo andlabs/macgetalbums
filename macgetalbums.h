@@ -43,8 +43,8 @@
 // TODO init storing time to init
 - (NSArray *)collectTracks:(double *)duration;
 @end
-@class ScriptingBridgeCollector : Collector;
-@class iTunesLibraryCollector : Collector;
+@class ScriptingBridgeCollector<Collector>;
+@class iTunesLibraryCollector<Collector>;
 
 // amisigned.m
 extern BOOL amISigned(OSStatus *err);
