@@ -4,9 +4,10 @@ OUT = macgetalbums
 
 MFILES = \
 	amisigned.m \
-	collect.m \
 	item.m \
+	ituneslibrary.m \
 	main.m \
+	scriptingbridge.m \
 	timer.m
 
 HFILES = \

@@ -1,6 +1,10 @@
 // 22 august 2017
 #import "macgetalbums.h"
 
+@interface ScriptingBridgeCollector : NSObject<Collector> {
+}
+@end
+
 static Item *trackToItem(iTunesTrack *track)
 {
 	Item *item;
@@ -20,7 +24,15 @@ static Item *trackToItem(iTunesTrack *track)
 	return item;
 }
 
-NSArray *collectTracks(double *duration)
+@implementation ScriptingBridgeCollector
+
++ (BOOL)canRun
+{
+	return YES;
+}
+
+// TODO split this into two functions
+- (NSArray *)collectTracks:(double *)duration;
 {
 	iTunesApplication *iTunes;
 	SBElementArray *tracks;
@@ -52,3 +64,5 @@ NSArray *collectTracks(double *duration)
 	[iTunes release];
 	return items;
 }
+
+@end

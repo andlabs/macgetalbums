@@ -1,5 +1,5 @@
 // 3 september 2017
-#import <Foundation/Foundation.h>
+#import "macgetalbums.h"
 
 // To avoid a build-time dependency on iTunesLibrary.framework, recreate the relevant functionality with protocols so we don't have to include the real headers.
 // Thanks to dexter0 in irc.freenode.net/#macdev.
@@ -26,7 +26,19 @@
 - (NSArray *)allMediaItems;
 @end
 
-int main(void)
+@interface iTunesLibraryCollector : NSObject<Collector> {
+}
+@end
+
+@implementation iTunesLibraryCollector
+
++ (BOOL)canRun
+{
+	return amISigned(NULL);
+}
+
+// TODO make this an instance stuff
+- (NSArray *)collectTracks:(double *)duration
 {
 	NSBundle *framework;
 	Class libraryClass;
@@ -71,5 +83,7 @@ int main(void)
 	if ([framework unload] == NO)
 		NSLog(@"warning: failed to unload iTunesLibrary.framework");
 	[framework release];
-	return 0;
+	return nil;
 }
+
+@end
