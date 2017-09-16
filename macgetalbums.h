@@ -47,4 +47,6 @@
 @class iTunesLibraryCollector<Collector>;
 
 // amisigned.m
-extern BOOL amISigned(OSStatus *err);
+extern BOOL amISigned;
+extern OSStatus amISignedErr;
+extern BOOL checkIfSigned(void);
