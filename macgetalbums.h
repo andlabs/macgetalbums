@@ -37,6 +37,7 @@
 
 // scriptingbridge.m and ituneslibrary.m
 @protocol Collector<NSObject>
++ (NSString *)collectorName;
 + (BOOL)canRun;
 // TODO canGetArtworkCount (iTunesLibrary can't? TODO)
 // TODO init storing time to init

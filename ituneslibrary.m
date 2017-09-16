@@ -32,8 +32,14 @@
 
 @implementation iTunesLibraryCollector
 
++ (NSString *)collectorName
+{
+	return @"iTunesLibrary Framework";
+}
+
 + (BOOL)canRun
 {
+	// TODO instead of calling this, test it at startup
 	return amISigned(NULL);
 }
 

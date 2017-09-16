@@ -26,6 +26,11 @@ static Item *trackToItem(iTunesTrack *track)
 
 @implementation ScriptingBridgeCollector
 
++ (NSString *)collectorName
+{
+	return @"Scripting Bridge";
+}
+
 + (BOOL)canRun
 {
 	return YES;
