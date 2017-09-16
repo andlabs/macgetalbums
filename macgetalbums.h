@@ -35,8 +35,15 @@
 - (void)handleOverrides;
 @end
 
-// collect.m
-extern NSArray *collectTracks(double *duration);
+// scriptingbridge.m and ituneslibrary.m
+@protocol Collector<NSObject>
++ (BOOL)canRun;
+// TODO canGetArtworkCount (iTunesLibrary can't? TODO)
+// TODO init storing time to init
+- (NSArray *)collectTracks:(double *)duration;
+@end
+@class ScriptingBridgeCollector : Collector;
+@class iTunesLibraryCollector : Collector;
 
 // amisigned.m
 extern BOOL amISigned(OSStatus *err);
