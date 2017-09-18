@@ -23,6 +23,19 @@
 - (double)seconds;
 @end
 
+// duration.m
+@interface Duration : NSObject {
+	BOOL hasSeconds;
+	NSUInteger msec;
+	double sec;
+}
+- (id)initWithMilliseconds:(NSUInteger)val;
+- (id)initWithSeconds:(double)val;
+- (void)addMilliseconds:(NSUInteger)val;
+- (void)addSeconds:(double)val;
+- (NSUInteger)milliseconds;
+@end
+
 // item.m
 @interface Item : NSObject
 // TODO make lowercase?

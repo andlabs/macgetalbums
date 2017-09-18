@@ -4,6 +4,7 @@ OUT = macgetalbums
 
 MFILES = \
 	amisigned.m \
+	duration.m \
 	item.m \
 	ituneslibrary.m \
 	main.m \
