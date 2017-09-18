@@ -58,7 +58,7 @@ static const struct {
 	return self;
 }
 
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUinteger)ms
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUInteger)ms
 {
 	Duration *l;
 
@@ -97,6 +97,11 @@ static const struct {
 - (NSInteger)year
 {
 	return self->year;
+}
+
+- (void)setYear:(NSInteger)y
+{
+	self->year = y;
 }
 
 - (NSString *)artist

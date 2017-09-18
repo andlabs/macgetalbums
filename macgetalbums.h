@@ -13,6 +13,9 @@
 #import <mach/mach_time.h>
 #import "iTunes.h"
 
+// TODO damn MacTypes.h
+#define Duration mgaDuration
+
 // timer.m
 enum {
 	TimerLoad = 1,
@@ -40,6 +43,7 @@ enum {
 }
 - (id)initWithMilliseconds:(NSUInteger)val;
 - (id)initWithSeconds:(double)val;
+- (void)add:(Duration *)d;
 - (void)addMilliseconds:(NSUInteger)val;
 - (void)addSeconds:(double)val;
 - (NSUInteger)milliseconds;
@@ -53,9 +57,11 @@ enum {
 	Duration *duration;
 }
 - (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa length:(Duration *)l;
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUinteger)ms;
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUInteger)ms;
 - (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthSeconds:(double)sec;
 - (NSInteger)year;
+// TODO make this unnecessary somehow
+- (void)setYear:(NSInteger)year;
 - (NSString *)artist;
 - (NSString *)album;
 - (Duration *)length;

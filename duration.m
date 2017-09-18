@@ -29,6 +29,13 @@
 	return self;
 }
 
+- (void)add:(Duration *)d
+{
+	[self addMilliseconds:d->msec];
+	if (d->hasSeconds)
+		[self addSeconds:d->sec];
+}
+
 - (void)addMilliseconds:(NSUInteger)val
 {
 	self->msec += val;
