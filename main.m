@@ -20,8 +20,8 @@ void usage(void)
 
 int main(int argc, char *argv[])
 {
+	id<Collector> collector;
 	NSArray *tracks;
-	double duration;
 	Timer *timer;
 	int c;
 
@@ -47,13 +47,19 @@ int main(int argc, char *argv[])
 	if (argc != 0)
 		usage();
 
-	tracks = collectTracks(&duration);
+	timer = [Timer new];
+
+	collector = [[ScriptingBridgeCollector alloc] initWithTimer:timer error:err];
+	// TODO check err
 	if (verbose)
-		printf("time to issue script: %gs\n", duration);
+		printf("time to load iTunes library: %gs\n", [timer seconds:TimerLoad]);
+
+	tracks = [collector collectTracks];
+	if (verbose)
+		printf("time to collect tracks: %gs\n", [timer seconds:TimeCollect]);
 
 	albums = [NSMutableSet new];
-	timer = [Timer new];
-	[timer start];
+	[timer start:TimeSort];
 	if (verbose)
 		// TODO with Scripting Bridge this is ~1e-5 seconds?! should we include the SBApplication constructor?
 		printf("track count: %ld\n", (long) [tracks count]);
@@ -68,18 +74,19 @@ int main(int argc, char *argv[])
 		if (existing != nil) {
 			// We want to take the earliest release date, to
 			// reflect the original release of this album.
-			if (existing.Year > track.Year)
-				existing.Year = track.Year;
-			existing.Length += track.Length;
+			if ([existing year] > [track year])
+				[existing setYear:[track year]];
+			[[existing length] add:[track length]];
 			continue;
 		}
 		[albums addObject:track];
 	}
 	[timer end];
 	if (verbose)
-		printf("time to process tracks: %gs\n", [timer seconds]);
-	[timer release];
+		printf("time to process tracks: %gs\n", [timer seconds:TimeSort]);
 	[tracks release];
+	[collector release];
+	[timer release];
 
 	if (verbose)
 		printf("album count: %lu\n",
@@ -90,15 +97,15 @@ int main(int argc, char *argv[])
 		Item *t = (Item *) obj;
 
 		printf("%ld\t%s\t%s",
-			(long) (t.Year),
-			[t.Artist UTF8String],
-			[t.Album UTF8String]);
+			(long) ([t year]),
+			[[t artist] UTF8String],
+			[[t album] UTF8String]);
 		if (showLengths)
 			printf("\t%s",
-				[[t lengthString] UTF8String]);
+				[[[t length] description] UTF8String]);
 		printf("\n");
 	}];
 
-	// TODO clean up?
+	// TODO clean up here?
 	return 0;
 }
