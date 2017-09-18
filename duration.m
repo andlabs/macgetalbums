@@ -1,6 +1,10 @@
 // 17 september 2017
 #import "macgetalbums.h"
 
+// ScriptingBridge reports durations as a double with seconds.
+// iTunesLibrary.framework reports durations as a NSUInteger with milliseconds.
+// This class manages the difference.
+
 @implementation Duration
 
 - (id)initWithMilliseconds:(NSUInteger)val
