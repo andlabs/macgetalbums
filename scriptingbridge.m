@@ -63,7 +63,11 @@
 	for (iTunesTrack *track in tracks) {
 		Item *item;
 
-		item = trackToItem(track);
+		item = [[Item alloc] initWithYear:[track year]
+			trackArtist:[track artist]
+			album:[track album]
+			albumArtist:[track albumArtist]
+			lengthSeconds:[track duration]];
 		[items addObject:item];
 		[item release];		// and release the initial reference
 	}

@@ -2,6 +2,7 @@
 #import "macgetalbums.h"
 
 // TODO drop "length" and use "duration" everywhere?
+// TODO and rename this to Track?
 
 static const struct {
 	NSInteger year;
