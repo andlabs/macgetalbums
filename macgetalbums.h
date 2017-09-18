@@ -66,8 +66,8 @@ enum {
 + (NSString *)collectorName;
 + (BOOL)canRun;
 // TODO canGetArtworkCount (iTunesLibrary can't? TODO)
-- (id)initWithTimer:(Timer *)t;
-- (NSArray *)collectTracks:(double *)duration;
+- (id)initWithTimer:(Timer *)t error:(NSError **)err;
+- (NSArray *)collectTracks;
 @end
 @class ScriptingBridgeCollector<Collector>;
 @class iTunesLibraryCollector<Collector>;
