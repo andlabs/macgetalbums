@@ -24,6 +24,7 @@
 @end
 
 // duration.m
+// TODO swap seconds and ms? seconds came first
 @interface Duration : NSObject {
 	BOOL hasSeconds;
 	NSUInteger msec;
@@ -37,15 +38,19 @@
 @end
 
 // item.m
-@interface Item : NSObject
-// TODO make lowercase?
-@property NSInteger Year;
-@property (strong) NSString *Artist;
-@property (strong) NSString *Album;
-@property double Length;
-- (NSString *)lengthString;
-// TODO make this automatic, possibly part of init
-- (void)handleOverrides;
+@interface Item : NSObject {
+	NSInteger year;
+	NSString *artist;
+	NSString *album;
+	Duration *duration;
+}
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa length:(Duration *)l;
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUinteger)ms;
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthSeconds:(double)sec;
+- (NSInteger)year;
+- (NSString *)artist;
+- (NSString *)album;
+- (Duration *)length;
 @end
 
 // scriptingbridge.m and ituneslibrary.m

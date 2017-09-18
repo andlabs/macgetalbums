@@ -5,25 +5,6 @@
 }
 @end
 
-static Item *trackToItem(iTunesTrack *track)
-{
-	Item *item;
-
-	item = [Item new];
-	item.Year = [track year];
-	item.Artist = [track albumArtist];
-	if (item.Artist == nil) {
-		fprintf(stderr, "TODO\n");
-		exit(1);
-	}
-	if ([item.Artist isEqual:@""])
-		item.Artist = [track artist];
-	item.Album = [track album];
-	[item handleOverrides];
-	item.Length = [track duration];
-	return item;
-}
-
 @implementation ScriptingBridgeCollector
 
 + (NSString *)collectorName
