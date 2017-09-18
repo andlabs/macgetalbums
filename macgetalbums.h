@@ -14,13 +14,21 @@
 #import "iTunes.h"
 
 // timer.m
+enum {
+	TimerLoad = 1,
+	TimerCollect,
+	TimerSort,
+	nTimers,
+};
 @interface Timer : NSObject {
-	uint64_t start, end;
+	int cur;
+	uint64_t starts[nTimers];
+	uint64_t ends[nTimers];
 }
-- (void)start;
+- (void)start:(int)t;
 - (void)end;
-- (uint64_t)nanoseconds;
-- (double)seconds;
+- (uint64_t)nanoseconds:(int)t;
+- (double)seconds:(int)t;
 @end
 
 // duration.m
@@ -58,7 +66,7 @@
 + (NSString *)collectorName;
 + (BOOL)canRun;
 // TODO canGetArtworkCount (iTunesLibrary can't? TODO)
-// TODO init storing time to init
+- (id)initWithTimer:(Timer *)t;
 - (NSArray *)collectTracks:(double *)duration;
 @end
 @class ScriptingBridgeCollector<Collector>;

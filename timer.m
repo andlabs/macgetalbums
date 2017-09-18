@@ -14,29 +14,46 @@ static mach_timebase_info_data_t timebase;
 	mach_timebase_info(&timebase);
 }
 
-- (void)start
+- (id)init
 {
-	self->start = mach_absolute_time();
+	self = [super init];
+	if (self) {
+		self->cur = 0;
+		memset(self->starts, 0, nTimers * sizeof (uint64_t));
+		memset(self->ends, 0, nTimers * sizeof (uint64_t));
+	}
+	return self;
+}
+
+- (void)start:(int)t
+{
+	if (self->cur != 0)
+		[self end];
+	self->cur = t;
+	self->starts[self->cur] = mach_absolute_time();
 }
 
 - (void)end
 {
-	self->end = mach_absolute_time();
+	self->ends[self->cur] = mach_absolute_time();
+	self->state = 0;
 }
 
-- (uint64_t)nanoseconds
+- (uint64_t)nanoseconds:(int)t
 {
 	uint64_t duration;
 
-	duration = self->end - self->start;
+	if (t == self->cur)
+		[self end];
+	duration = self->ends[t] - self->starts[t];
 	return duration * timebase.numer / timebase.denom;
 }
 
-- (double)seconds
+- (double)seconds:(int)t
 {
 	uint64_t nsec;
 
-	nsec = [self nanoseconds];
+	nsec = [self nanoseconds:t];
 	return ((double) nsec) / ((double) NSEC_PER_SEC);
 }
 
