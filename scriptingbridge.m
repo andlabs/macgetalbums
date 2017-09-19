@@ -12,9 +12,9 @@
 	return @"Scripting Bridge";
 }
 
-+ (BOOL)canRun
++ (BOOL)needsSigning
 {
-	return YES;
+	return NO;
 }
 
 - (id)initWithTimer:(Timer *)t error:(NSError **)err

@@ -70,7 +70,7 @@ enum {
 // scriptingbridge.m and ituneslibrary.m
 @protocol Collector<NSObject>
 + (NSString *)collectorName;
-+ (BOOL)canRun;
++ (BOOL)needsSigning;
 // TODO canGetArtworkCount (iTunesLibrary can't? TODO)
 - (id)initWithTimer:(Timer *)t error:(NSError **)err;
 - (NSArray *)collectTracks;

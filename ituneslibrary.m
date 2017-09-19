@@ -41,9 +41,9 @@
 	return @"iTunesLibrary Framework";
 }
 
-+ (BOOL)canRun
++ (BOOL)needsSigning
 {
-	return amISigned;
+	return YES;
 }
 
 - (id)initWithTimer:(Timer *)t error:(NSError **)err
