@@ -78,7 +78,12 @@ int main(int argc, char *argv[])
 		if (verbose)
 			printf("trying collector %s\n",
 				[[collectorClass collectorName] UTF8String]);
-		// TODO signing
+		if (!amISigned && [collectorClass needsSigning]) {
+			if (verbose)
+				printf("collector %s needs signing and we aren't signed; skipping\n",
+					[[collectorClass collectorName] UTF8String]);
+			continue;
+		}
 		collector = [[collectorClass alloc] initWithTimer:timer error:&err];
 		if (err != nil) {
 			if (verbose)

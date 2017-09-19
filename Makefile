@@ -31,8 +31,14 @@ LDFLAGS = \
 	-framework ScriptingBridge \
 	-framework Security
 
+# this defaults the signing type to ad-hoc, which is sufficient for our needs
+CODESIGNFLAGS = \
+	-s -
+
+# thanks to geirha in irc.freenode.net #bash for the knowledge that the exit status of an if that doesn't run its then and has no else is 0
 $(OUT): $(OFILES)
 	clang -o $@ $(OFILES) $(LDFLAGS)
+	if type codesign > /dev/null 2>&1; then codesign $(CODESIGNFLAGS) $@; fi
 
 %.o: %.m $(HFILES)
 	clang -c -o $@ $< $(MFLAGS)
