@@ -69,6 +69,8 @@ enum {
 
 // scriptingbridge.m and ituneslibrary.m
 @protocol Collector<NSObject>
+// TODO apparently this isn't in the NSObject protocol?
++ (instancetype)alloc;
 + (NSString *)collectorName;
 + (BOOL)needsSigning;
 // TODO canGetArtworkCount (iTunesLibrary can't? TODO)

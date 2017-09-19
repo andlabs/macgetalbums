@@ -8,7 +8,8 @@ BOOL showLengths = NO;
 // TODO option to show counts
 // TODO option to force a specific collector
 
-static const NSString *collectors[] = {
+// TODO why can't this be const?
+static NSString *collectors[] = {
 	@"iTunesLibraryCollector",
 	@"ScriptingBridgeCollector",
 	nil,
@@ -91,6 +92,7 @@ int main(int argc, char *argv[])
 		}
 		if (verbose)
 			printf("time to load iTunes library: %gs\n", [timer seconds:TimerLoad]);
+		break;
 	}
 	if (collector == nil) {
 		fprintf(stderr, "error: no iTunes collector could be used; cannot continue\n");
