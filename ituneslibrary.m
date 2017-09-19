@@ -130,7 +130,7 @@
 	}
 
 	// TODO is this release correct?
-	[tracks release];
+//	[tracks release];
 	return items;
 }
 

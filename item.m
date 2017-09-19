@@ -35,10 +35,9 @@ static const struct {
 		self->year = y;
 		// use the album artist if there, track artist otherwise
 		self->artist = aa;
-		if (self->artist == nil) {
-			fprintf(stderr, "TODO\n");
-			exit(1);
-		}
+		// iTunesLibrary.framework does this
+		if (self->artist == nil)
+			self->artist = @"";
 		if ([self->artist isEqual:@""])
 			self->artist = ta;
 		[self->artist retain];
