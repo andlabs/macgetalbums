@@ -129,7 +129,7 @@
 		[item release];		// and release the initial reference
 	}
 
-	// TODO is this release correct?
+	// TODO why is this release incorrect?
 //	[tracks release];
 	return items;
 }
