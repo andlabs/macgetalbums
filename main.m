@@ -5,6 +5,7 @@ static BOOL optVerbose = NO;
 static BOOL optShowLengths = NO;
 static BOOL optShowCount = NO;
 // TODO option to force a specific collector
+// TODO option to spot tracks with either missing or duplicate album artwork (ScriptingBridge only)
 
 static void xlog(NSString *fmt, ...)
 {
@@ -56,11 +57,23 @@ const char *argv0;
 
 void usage(void)
 {
+	int i;
+
 	fprintf(stderr, "usage: %s [-chlv]\n", argv0);
 	fprintf(stderr, "  -c - show track and album count and quit\n");
 	fprintf(stderr, "  -h - show this help\n");
 	fprintf(stderr, "  -l - show album lengths\n");
 	fprintf(stderr, "  -v - print verbose output\n");
+	// TODO prettyprint this somehow
+	fprintf(stderr, "known collectors, in order of which is tried without TODO:\n");
+	for (i = 0; collectors[i] != nil; i++) {
+		Class<Collector> class;
+
+		class = NSClassFromString(collectors[i]);
+		fprintf(stderr, " %s\n  %s\n",
+			[collectors[i] UTF8String],
+			[[class collectorDescription] UTF8String]);
+	}
 	exit(1);
 }
 
