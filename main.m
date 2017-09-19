@@ -23,6 +23,34 @@ static NSString *collectors[] = {
 	nil,
 };
 
+static id<Collector> tryCollector(NSString *class, Timer *timer)
+{
+	id<Collector> collector;
+	Class<Collector> collectorClass;
+	NSError *err = nil;
+
+	collectorClass = NSClassFromString(class);
+	xlog(@"trying collector %@", [collectorClass collectorName]);
+
+	if (!amISigned && [collectorClass needsSigning]) {
+		xlog(@"collector %@ needs signing and we aren't signed; skipping",
+			[collectorClass collectorName]);
+		return nil;
+	}
+
+	collector = [[collectorClass alloc] initWithTimer:timer error:&err];
+	if (err != nil) {
+		xlog(@"error loading collector %@: %@; skipping",
+			[collectorClass collectorName], err);
+		// TODO release err?
+		[collector release];
+		return nil;
+	}
+	xlog(@"time to load iTunes library: %gs",
+		[timer seconds:TimerLoad]);
+	return collector;
+}
+
 NSMutableSet *albums = nil;
 
 const char *argv0;
@@ -39,10 +67,8 @@ void usage(void)
 int main(int argc, char *argv[])
 {
 	id<Collector> collector;
-	Class<Collector> collectorClass;
 	NSArray *tracks;
 	Timer *timer;
-	NSError *err = nil;
 	BOOL signCheckSucceeded;
 	int i, c;
 
@@ -80,26 +106,9 @@ int main(int argc, char *argv[])
 
 	collector = nil;
 	for (i = 0; collectors[i] != nil; i++) {
-		collectorClass = NSClassFromString(collectors[i]);
-		xlog(@"trying collector %@",
-			[collectorClass collectorName]);
-		if (!amISigned && [collectorClass needsSigning]) {
-			xlog(@"collector %@ needs signing and we aren't signed; skipping",
-				[collectorClass collectorName]);
-			continue;
-		}
-		collector = [[collectorClass alloc] initWithTimer:timer error:&err];
-		if (err != nil) {
-			xlog(@"error loading collector %@: %@; skipping",
-				[collectorClass collectorName], err);
-			// TODO release err?
-			[collector release];
-			collector = nil;
-			continue;
-		}
-		xlog(@"time to load iTunes library: %gs",
-			[timer seconds:TimerLoad]);
-		break;
+		collector = tryCollector(collectors[i], timer);
+		if (collector != nil)
+			break;
 	}
 	if (collector == nil) {
 		fprintf(stderr, "error: no iTunes collector could be used; cannot continue\n");
