@@ -7,9 +7,9 @@
 	iTunesApplication *iTunes;
 }
 
-+ (NSString *)collectorName
++ (NSString *)collectorDescription
 {
-	return @"Scripting Bridge";
+	return @"Scripting Bridge (uses AppleScript to talk to iTunes; will launch iTunes as a result)";
 }
 
 + (BOOL)needsSigning

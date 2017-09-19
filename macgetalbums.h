@@ -72,7 +72,7 @@ enum {
 @protocol Collector<NSObject>
 // TODO apparently this isn't in the NSObject protocol?
 + (instancetype)alloc;
-+ (NSString *)collectorName;
++ (NSString *)collectorDescription;
 + (BOOL)needsSigning;
 // TODO canGetArtworkCount (iTunesLibrary can't? TODO)
 - (id)initWithTimer:(Timer *)t error:(NSError **)err;

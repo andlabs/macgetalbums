@@ -30,18 +30,17 @@ static id<Collector> tryCollector(NSString *class, Timer *timer)
 	NSError *err = nil;
 
 	collectorClass = NSClassFromString(class);
-	xlog(@"trying collector %@", [collectorClass collectorName]);
+	xlog(@"trying collector %@", class);
 
 	if (!amISigned && [collectorClass needsSigning]) {
-		xlog(@"collector %@ needs signing and we aren't signed; skipping",
-			[collectorClass collectorName]);
+		xlog(@"collector %@ needs signing and we aren't signed; skipping", class);
 		return nil;
 	}
 
 	collector = [[collectorClass alloc] initWithTimer:timer error:&err];
 	if (err != nil) {
 		xlog(@"error loading collector %@: %@; skipping",
-			[collectorClass collectorName], err);
+			class, err);
 		// TODO release err?
 		[collector release];
 		return nil;

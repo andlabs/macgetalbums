@@ -36,9 +36,9 @@
 	id<ourITLibrary> library;
 }
 
-+ (NSString *)collectorName
++ (NSString *)collectorDescription
 {
-	return @"iTunesLibrary Framework";
+	return @"iTunesLibrary.framework (provides fast read-only access to iTunes; requires iTunes v11.0 or newer and code signing)";
 }
 
 + (BOOL)needsSigning
