@@ -61,7 +61,7 @@
 		add = (NSUInteger) ceil(dms);
 		ms += add;
 	}
-	return add;
+	return ms;
 }
 
 - (NSString *)description

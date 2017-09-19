@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
 	id<Collector> collector;
 	NSArray *tracks;
 	Timer *timer;
+	NSError *err = nil;
 	int c;
 
 	argv0 = argv[0];
@@ -49,17 +50,17 @@ int main(int argc, char *argv[])
 
 	timer = [Timer new];
 
-	collector = [[ScriptingBridgeCollector alloc] initWithTimer:timer error:err];
+	collector = [[ScriptingBridgeCollector alloc] initWithTimer:timer error:&err];
 	// TODO check err
 	if (verbose)
 		printf("time to load iTunes library: %gs\n", [timer seconds:TimerLoad]);
 
 	tracks = [collector collectTracks];
 	if (verbose)
-		printf("time to collect tracks: %gs\n", [timer seconds:TimeCollect]);
+		printf("time to collect tracks: %gs\n", [timer seconds:TimerCollect]);
 
 	albums = [NSMutableSet new];
-	[timer start:TimeSort];
+	[timer start:TimerSort];
 	if (verbose)
 		// TODO with Scripting Bridge this is ~1e-5 seconds?! should we include the SBApplication constructor?
 		printf("track count: %ld\n", (long) [tracks count]);
@@ -83,7 +84,7 @@ int main(int argc, char *argv[])
 	}
 	[timer end];
 	if (verbose)
-		printf("time to process tracks: %gs\n", [timer seconds:TimeSort]);
+		printf("time to process tracks: %gs\n", [timer seconds:TimerSort]);
 	[tracks release];
 	[collector release];
 	[timer release];

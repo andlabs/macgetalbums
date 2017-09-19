@@ -1,13 +1,11 @@
 // 22 august 2017
 #import "macgetalbums.h"
 
-@interface ScriptingBridgeCollector : NSObject<Collector> {
+// TODO figure out how far back we can have ivars in @implementation
+@implementation ScriptingBridgeCollector {
 	Timer *timer;
 	iTunesApplication *iTunes;
 }
-@end
-
-@implementation ScriptingBridgeCollector
 
 + (NSString *)collectorName
 {
@@ -19,7 +17,7 @@
 	return YES;
 }
 
-- (id)initWithTimer:(TImer *)t error:(NSError **)err
+- (id)initWithTimer:(Timer *)t error:(NSError **)err
 {
 	self = [super init];
 	if (self) {

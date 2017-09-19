@@ -26,8 +26,10 @@ MFLAGS = \
 
 LDFLAGS = \
 	--std=c99 -g \
+	-framework CoreFoundation \
 	-framework Foundation \
-	-framework ScriptingBridge
+	-framework ScriptingBridge \
+	-framework Security
 
 $(OUT): $(OFILES)
 	clang -o $@ $(OFILES) $(LDFLAGS)

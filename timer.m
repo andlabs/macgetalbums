@@ -36,7 +36,7 @@ static mach_timebase_info_data_t timebase;
 - (void)end
 {
 	self->ends[self->cur] = mach_absolute_time();
-	self->state = 0;
+	self->cur = 0;
 }
 
 - (uint64_t)nanoseconds:(int)t

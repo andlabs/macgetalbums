@@ -54,7 +54,7 @@ enum {
 	NSInteger year;
 	NSString *artist;
 	NSString *album;
-	Duration *duration;
+	Duration *length;
 }
 - (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa length:(Duration *)l;
 - (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUInteger)ms;
@@ -75,8 +75,10 @@ enum {
 - (id)initWithTimer:(Timer *)t error:(NSError **)err;
 - (NSArray *)collectTracks;
 @end
-@class ScriptingBridgeCollector<Collector>;
-@class iTunesLibraryCollector<Collector>;
+@interface ScriptingBridgeCollector : NSObject<Collector>
+@end
+@interface iTunesLibraryCollector : NSObject<Collector>
+@end
 
 // amisigned.m
 extern BOOL amISigned;

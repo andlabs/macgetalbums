@@ -26,11 +26,9 @@
 - (NSArray *)allMediaItems;
 @end
 
-@interface iTunesLibraryCollector : NSObject<Collector> {
+// TODO figure out how far back we can have ivars in @implementation
+@implementation iTunesLibraryCollector {
 }
-@end
-
-@implementation iTunesLibraryCollector
 
 + (NSString *)collectorName
 {
@@ -39,13 +37,33 @@
 
 + (BOOL)canRun
 {
+	// TODO
+	return NO;
+
 	// TODO instead of calling this, test it at startup
-	return amISigned(NULL);
+	return amISigned;
+}
+
+- (id)initWithTimer:(Timer *)t error:(NSError **)err
+{
+	self = [super init];
+	if (self) {
+		// TODO
+	}
+	return self;
+}
+
+- (void)dealloc
+{
+	// TODO
+	[super dealloc];
 }
 
 // TODO make this an instance stuff
-- (NSArray *)collectTracks:(double *)duration
+- (NSArray *)collectTracks
 {
+abort();return nil;
+#if 0//TODO
 	NSBundle *framework;
 	Class libraryClass;
 	id<ourITLibrary> library;
@@ -90,6 +108,7 @@
 		NSLog(@"warning: failed to unload iTunesLibrary.framework");
 	[framework release];
 	return nil;
+#endif
 }
 
 @end
