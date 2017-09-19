@@ -6,6 +6,13 @@
 BOOL verbose = NO;
 BOOL showLengths = NO;
 // TODO option to show counts
+// TODO option to force a specific collector
+
+static const NSString *collectors[] = {
+	@"iTunesLibraryCollector",
+	@"ScriptingBridgeCollector",
+	nil,
+};
 
 NSMutableSet *albums = nil;
 
@@ -23,11 +30,12 @@ void usage(void)
 int main(int argc, char *argv[])
 {
 	id<Collector> collector;
+	Class<Collector> collectorClass;
 	NSArray *tracks;
 	Timer *timer;
 	NSError *err = nil;
 	BOOL signCheckSucceeded;
-	int c;
+	int i, c;
 
 	argv0 = argv[0];
 	while ((c = getopt(argc, argv, ":hlv")) != -1)
@@ -63,10 +71,31 @@ int main(int argc, char *argv[])
 
 	timer = [Timer new];
 
-	collector = [[ScriptingBridgeCollector alloc] initWithTimer:timer error:&err];
-	// TODO check err
-	if (verbose)
-		printf("time to load iTunes library: %gs\n", [timer seconds:TimerLoad]);
+	collector = nil;
+	for (i = 0; collectors[i] != nil; i++) {
+		collectorClass = NSClassFromString(collectors[i]);
+		if (verbose)
+			printf("trying collector %s\n",
+				[[collectorClass collectorName] UTF8String]);
+		// TODO signing
+		collector = [[collectorClass alloc] initWithTimer:timer error:&err];
+		if (err != nil) {
+			if (verbose)
+				printf("error using collector %s: %s; skipping\n",
+					[[collectorClass collectorName] UTF8String],
+					[[err description] UTF8String]);
+			// TODO release err?
+			[collector release];
+			collector = nil;
+			continue;
+		}
+		if (verbose)
+			printf("time to load iTunes library: %gs\n", [timer seconds:TimerLoad]);
+	}
+	if (collector == nil) {
+		fprintf(stderr, "error: no iTunes collector could be used; cannot continue\n");
+		return 1;
+	}
 
 	tracks = [collector collectTracks];
 	if (verbose)
