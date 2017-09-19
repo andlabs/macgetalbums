@@ -1,9 +1,8 @@
 // 8 june 2017
 #import "macgetalbums.h"
 
-// TODO prefix these with opt?
-BOOL verbose = NO;
-BOOL showLengths = NO;
+static BOOL optVerbose = NO;
+static BOOL optShowLengths = NO;
 // TODO option to show counts
 // TODO option to force a specific collector
 
@@ -12,7 +11,7 @@ static void xlog(NSString *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	if (verbose)
+	if (optVerbose)
 		NSLogv(fmt, ap);
 	va_end(ap);
 }
@@ -52,10 +51,10 @@ int main(int argc, char *argv[])
 		switch (c) {
 		case 'v':
 			// TODO rename to -d for debug?
-			verbose = YES;
+			optVerbose = YES;
 			break;
 		case 'l':
-			showLengths = YES;
+			optShowLengths = YES;
 			break;
 		case '?':
 			fprintf(stderr, "error: unknown option -%c\n", optopt);
@@ -152,7 +151,7 @@ int main(int argc, char *argv[])
 			(long) ([t year]),
 			[[t artist] UTF8String],
 			[[t album] UTF8String]);
-		if (showLengths)
+		if (optShowLengths)
 			printf("\t%s",
 				[[[t length] description] UTF8String]);
 		printf("\n");
