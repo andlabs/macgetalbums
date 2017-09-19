@@ -5,6 +5,8 @@
 // iTunesLibrary.framework reports durations as a NSUInteger with milliseconds.
 // This class manages the difference.
 
+// TODO provide an option for showing minutes without hours?
+
 @implementation Duration
 
 - (id)initWithMilliseconds:(NSUInteger)val
