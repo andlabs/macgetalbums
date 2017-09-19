@@ -3,7 +3,7 @@
 
 static BOOL optVerbose = NO;
 static BOOL optShowLengths = NO;
-// TODO option to show counts
+static BOOL optShowCount = NO;
 // TODO option to force a specific collector
 
 static void xlog(NSString *fmt, ...)
@@ -56,7 +56,8 @@ const char *argv0;
 
 void usage(void)
 {
-	fprintf(stderr, "usage: %s [-hlv]\n", argv0);
+	fprintf(stderr, "usage: %s [-chlv]\n", argv0);
+	fprintf(stderr, "  -c - show track and album count and quit\n");
 	fprintf(stderr, "  -h - show this help\n");
 	fprintf(stderr, "  -l - show album lengths\n");
 	fprintf(stderr, "  -v - print verbose output\n");
@@ -67,12 +68,13 @@ int main(int argc, char *argv[])
 {
 	id<Collector> collector;
 	NSArray *tracks;
+	NSUInteger trackCount;
 	Timer *timer;
 	BOOL signCheckSucceeded;
 	int i, c;
 
 	argv0 = argv[0];
-	while ((c = getopt(argc, argv, ":hlv")) != -1)
+	while ((c = getopt(argc, argv, ":chlv")) != -1)
 		switch (c) {
 		case 'v':
 			// TODO rename to -d for debug?
@@ -80,6 +82,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'l':
 			optShowLengths = YES;
+			break;
+		case 'c':
+			optShowCount = YES;
 			break;
 		case '?':
 			fprintf(stderr, "error: unknown option -%c\n", optopt);
@@ -121,8 +126,7 @@ int main(int argc, char *argv[])
 
 	albums = [NSMutableSet new];
 	[timer start:TimerSort];
-	xlog(@"track count: %lu",
-		(unsigned long) [tracks count]);
+	trackCount = [tracks count];
 	for (Item *track in tracks) {
 		Item *existing;
 
@@ -148,8 +152,13 @@ int main(int argc, char *argv[])
 	[collector release];
 	[timer release];
 
-	xlog(@"album count: %lu",
-		(unsigned long) [albums count]);
+	if (optShowCount) {
+		printf("%lu tracks %lu albums\n",
+			(unsigned long) trackCount,
+			(unsigned long) [albums count]);
+		goto done;
+	}
+
 	// TODO is tab safe to use?
 	// TODO switch to foreach
 	[albums enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
@@ -165,6 +174,7 @@ int main(int argc, char *argv[])
 		printf("\n");
 	}];
 
+done:
 	// TODO clean up here?
 	return 0;
 }
