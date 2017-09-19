@@ -2,11 +2,20 @@
 #import "macgetalbums.h"
 
 // TODO prefix these with opt?
-// TODO change verbose to debug and switch from using printf
 BOOL verbose = NO;
 BOOL showLengths = NO;
 // TODO option to show counts
 // TODO option to force a specific collector
+
+static void xlog(NSString *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	if (verbose)
+		NSLogv(fmt, ap);
+	va_end(ap);
+}
 
 // TODO why can't this be const?
 static NSString *collectors[] = {
@@ -61,42 +70,36 @@ int main(int argc, char *argv[])
 		usage();
 
 	signCheckSucceeded = checkIfSigned();
-	if (verbose) {
-		if (!signCheckSucceeded)
-			printf("signed-code checking failed with error %d; assuming not signed\n", (int) amISignedErr);
-		else if (amISigned)
-			printf("we are signed\n");
-		else
-			printf("we are not signed\n");
-	}
+	if (!signCheckSucceeded)
+		xlog(@"signed-code checking failed with error %d; assuming not signed", (int) amISignedErr);
+	else if (amISigned)
+		xlog(@"we are signed");
+	else
+		xlog(@"we are not signed");
 
 	timer = [Timer new];
 
 	collector = nil;
 	for (i = 0; collectors[i] != nil; i++) {
 		collectorClass = NSClassFromString(collectors[i]);
-		if (verbose)
-			printf("trying collector %s\n",
-				[[collectorClass collectorName] UTF8String]);
+		xlog(@"trying collector %@",
+			[collectorClass collectorName]);
 		if (!amISigned && [collectorClass needsSigning]) {
-			if (verbose)
-				printf("collector %s needs signing and we aren't signed; skipping\n",
-					[[collectorClass collectorName] UTF8String]);
+			xlog(@"collector %@ needs signing and we aren't signed; skipping",
+				[collectorClass collectorName]);
 			continue;
 		}
 		collector = [[collectorClass alloc] initWithTimer:timer error:&err];
 		if (err != nil) {
-			if (verbose)
-				printf("error using collector %s: %s; skipping\n",
-					[[collectorClass collectorName] UTF8String],
-					[[err description] UTF8String]);
+			xlog(@"error loading collector %@: %@; skipping",
+				[collectorClass collectorName], err);
 			// TODO release err?
 			[collector release];
 			collector = nil;
 			continue;
 		}
-		if (verbose)
-			printf("time to load iTunes library: %gs\n", [timer seconds:TimerLoad]);
+		xlog(@"time to load iTunes library: %gs",
+			[timer seconds:TimerLoad]);
 		break;
 	}
 	if (collector == nil) {
@@ -105,14 +108,14 @@ int main(int argc, char *argv[])
 	}
 
 	tracks = [collector collectTracks];
-	if (verbose)
-		printf("time to collect tracks: %gs\n", [timer seconds:TimerCollect]);
+	// TODO with Scripting Bridge this is ~1e-5 seconds?! is that correct?!
+	xlog(@"time to collect tracks: %gs",
+		[timer seconds:TimerCollect]);
 
 	albums = [NSMutableSet new];
 	[timer start:TimerSort];
-	if (verbose)
-		// TODO with Scripting Bridge this is ~1e-5 seconds?! should we include the SBApplication constructor?
-		printf("track count: %ld\n", (long) [tracks count]);
+	xlog(@"track count: %lu",
+		(unsigned long) [tracks count]);
 	for (Item *track in tracks) {
 		Item *existing;
 
@@ -132,15 +135,14 @@ int main(int argc, char *argv[])
 		[albums addObject:track];
 	}
 	[timer end];
-	if (verbose)
-		printf("time to process tracks: %gs\n", [timer seconds:TimerSort]);
+	xlog(@"time to process tracks: %gs",
+		[timer seconds:TimerSort]);
 	[tracks release];
 	[collector release];
 	[timer release];
 
-	if (verbose)
-		printf("album count: %lu\n",
-			(unsigned long) [albums count]);
+	xlog(@"album count: %lu",
+		(unsigned long) [albums count]);
 	// TODO is tab safe to use?
 	// TODO switch to foreach
 	[albums enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
