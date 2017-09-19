@@ -17,30 +17,32 @@ static void xlog(NSString *fmt, ...)
 	va_end(ap);
 }
 
-// TODO why can't this be const?
-static NSString *collectors[] = {
-	@"iTunesLibraryCollector",
-	@"ScriptingBridgeCollector",
-	nil,
+static const char *collectors[] = {
+	"iTunesLibraryCollector",
+	"ScriptingBridgeCollector",
+	NULL,
 };
 
-static id<Collector> tryCollector(NSString *class, Timer *timer)
+// TODO use objc_getRequiredClass() instead?
+#define GETCLASS(c) objc_getClass(c)
+
+static id<Collector> tryCollector(const char *class, Timer *timer)
 {
 	id<Collector> collector;
 	Class<Collector> collectorClass;
 	NSError *err = nil;
 
-	collectorClass = NSClassFromString(class);
-	xlog(@"trying collector %@", class);
+	collectorClass = GETCLASS(class);
+	xlog(@"trying collector %s", class);
 
 	if (!amISigned && [collectorClass needsSigning]) {
-		xlog(@"collector %@ needs signing and we aren't signed; skipping", class);
+		xlog(@"collector %s needs signing and we aren't signed; skipping", class);
 		return nil;
 	}
 
 	collector = [[collectorClass alloc] initWithTimer:timer error:&err];
 	if (err != nil) {
-		xlog(@"error loading collector %@: %@; skipping",
+		xlog(@"error loading collector %s: %@; skipping",
 			class, err);
 		// TODO release err?
 		[collector release];
@@ -66,12 +68,12 @@ void usage(void)
 	fprintf(stderr, "  -v - print verbose output\n");
 	// TODO prettyprint this somehow
 	fprintf(stderr, "known collectors, in order of which is tried without TODO:\n");
-	for (i = 0; collectors[i] != nil; i++) {
+	for (i = 0; collectors[i] != NULL; i++) {
 		Class<Collector> class;
 
-		class = NSClassFromString(collectors[i]);
+		class = GETCLASS(collectors[i]);
 		fprintf(stderr, " %s\n  %s\n",
-			[collectors[i] UTF8String],
+			collectors[i],
 			[[class collectorDescription] UTF8String]);
 	}
 	exit(1);
@@ -122,7 +124,7 @@ int main(int argc, char *argv[])
 	timer = [Timer new];
 
 	collector = nil;
-	for (i = 0; collectors[i] != nil; i++) {
+	for (i = 0; collectors[i] != NULL; i++) {
 		collector = tryCollector(collectors[i], timer);
 		if (collector != nil)
 			break;

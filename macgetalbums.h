@@ -12,6 +12,7 @@
 #import <stdarg.h>
 #import <mach/mach.h>
 #import <mach/mach_time.h>
+#import <objc/runtime.h>
 #import "iTunes.h"
 
 // TODO damn MacTypes.h
