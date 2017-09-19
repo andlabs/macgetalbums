@@ -75,7 +75,7 @@
 		s++;
 	m = s / 60;
 	s = s % 60;
-	if (s < 60)
+	if (m < 60)
 		return [NSString stringWithFormat:@"%ju:%02ju",
 			(uintmax_t) m, (uintmax_t) s];
 	h = m / 60;
