@@ -2,8 +2,10 @@
 #import "macgetalbums.h"
 
 // TODO prefix these with opt?
+// TODO change verbose to debug and switch from using printf
 BOOL verbose = NO;
 BOOL showLengths = NO;
+// TODO option to show counts
 
 NSMutableSet *albums = nil;
 
@@ -24,6 +26,7 @@ int main(int argc, char *argv[])
 	NSArray *tracks;
 	Timer *timer;
 	NSError *err = nil;
+	BOOL signCheckSucceeded;
 	int c;
 
 	argv0 = argv[0];
@@ -47,6 +50,16 @@ int main(int argc, char *argv[])
 	argv += optind;
 	if (argc != 0)
 		usage();
+
+	signCheckSucceeded = checkIfSigned();
+	if (verbose) {
+		if (!signCheckSucceeded)
+			printf("signed-code checking failed with error %d; assuming not signed\n", (int) amISignedErr);
+		else if (amISigned)
+			printf("we are signed\n");
+		else
+			printf("we are not signed\n");
+	}
 
 	timer = [Timer new];
 
