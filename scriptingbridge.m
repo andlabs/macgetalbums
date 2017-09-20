@@ -60,7 +60,15 @@
 	// SBElementArray is a subclass of NSMutableArray so this will work
 	for (iTunesTrack *track in tracks) {
 		Item *item;
+		NSString *trackArtist, *albumArtist;
 
+		trackArtist = [track artist];
+		albumArtist = [track albumArtist];
+		// TODO this always returns NO for some reason
+		if ([track compilation]) {
+			trackArtist = compilationArtist;
+			albumArtist = compilationArtist;
+		}
 		item = [[Item alloc] initWithYear:[track year]
 			trackArtist:[track artist]
 			album:[track album]

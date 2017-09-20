@@ -10,6 +10,7 @@
 @protocol ourITLibAlbum<NSObject>
 - (NSString *)title;
 - (NSString *)albumArtist;
+- (BOOL)isCompilation;
 @end
 
 @protocol ourITLibMediaItem<NSObject>
@@ -119,11 +120,18 @@
 	// TODO does this only cover music or not? compare to the ScriptingBridge code
 	for (id<ourITLibMediaItem> track in tracks) {
 		Item *item;
+		NSString *trackArtist, *albumArtist;
 
+		trackArtist = [[track artist] name];
+		albumArtist = [[track album] albumArtist];
+		if ([[track album] isCompilation]) {
+			trackArtist = compilationArtist;
+			albumArtist = compilationArtist;
+		}
 		item = [[Item alloc] initWithYear:[track year]
-			trackArtist:[[track artist] name]
+			trackArtist:trackArtist
 			album:[[track album] title]
-			albumArtist:[[track album] albumArtist]
+			albumArtist:albumArtist
 			lengthMilliseconds:[track totalTime]];
 		[items addObject:item];
 		[item release];		// and release the initial reference

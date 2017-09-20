@@ -2,7 +2,8 @@
 #import "macgetalbums.h"
 
 // TODO drop "length" and use "duration" everywhere?
-// TODO and rename this to Track?
+
+NSString *const compilationArtist = @"(compilation)";
 
 static const struct {
 	NSInteger year;

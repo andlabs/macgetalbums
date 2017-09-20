@@ -52,6 +52,7 @@ enum {
 @end
 
 // item.m
+extern NSString *const compilationArtist;
 @interface Item : NSObject<NSCopying> {
 	NSInteger year;
 	NSString *artist;
