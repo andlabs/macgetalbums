@@ -6,7 +6,7 @@ static BOOL optShowLengths = NO;
 static BOOL optShowCount = NO;
 const char *optCollector = NULL;
 static BOOL optMinutes = NO;
-// TODO option to spot tracks with either missing or duplicate album artwork (ScriptingBridge only)
+static BOOL optArtwork = NO;
 // TODO option to build PDF
 
 static void xlog(NSString *fmt, ...)
@@ -62,7 +62,8 @@ void usage(void)
 {
 	int i;
 
-	fprintf(stderr, "usage: %s [-chlmv] [-u collector]\n", argv0);
+	fprintf(stderr, "usage: %s [-achlmv] [-u collector]\n", argv0);
+	fprintf(stderr, "  -a - show tracks that have missing or duplicate artwork (overrides -c)\n");
 	fprintf(stderr, "  -c - show track and album count and total playing time and quit\n");
 	fprintf(stderr, "  -h - show this help\n");
 	fprintf(stderr, "  -l - show album lengths\n");
@@ -94,7 +95,7 @@ int main(int argc, char *argv[])
 	int i, c;
 
 	argv0 = argv[0];
-	while ((c = getopt(argc, argv, ":chlmu:v")) != -1)
+	while ((c = getopt(argc, argv, ":achlmu:v")) != -1)
 		switch (c) {
 		case 'v':
 			// TODO rename to -d for debug?
@@ -111,6 +112,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'm':
 			optMinutes = YES;
+			break;
+		case 'a':
+			optArtwork = YES;
 			break;
 		case '?':
 			fprintf(stderr, "error: unknown option -%c\n", optopt);
@@ -137,6 +141,7 @@ int main(int argc, char *argv[])
 
 	timer = [Timer new];
 
+	// TODO this and tryCollector() need massive cleanup
 	if (optCollector != NULL) {
 		collector = nil;
 		for (i = 0; collectors[i] != NULL; i++)
@@ -160,13 +165,23 @@ int main(int argc, char *argv[])
 				[[err description] UTF8String]);
 			return 1;
 		}
+		if (optArtwork && ![[collector class] canGetArtworkCount]) {
+			fprintf(stderr, "error: collector %s can't be used to collect duplicate album artwork info; sorry\n", optCollector);
+			return 1;
+		}
 	} else {
 		collector = nil;
 		for (i = 0; collectors[i] != NULL; i++) {
 			err = nil;
 			collector = tryCollector(collectors[i], timer, &err);
-			if (collector != nil)
+			if (collector != nil) {
+				if (optArtwork && ![[collector class] canGetArtworkCount]) {
+					xlog(@"can't use collector %s to collect artwork conts; skipping", collectors[i]);
+					[collector release];
+					continue;
+				}
 				break;
+			}
 		}
 		if (collector == nil) {
 			fprintf(stderr, "error: no iTunes collector could be used; cannot continue\n");
@@ -178,6 +193,16 @@ int main(int argc, char *argv[])
 	// TODO with Scripting Bridge this is ~1e-5 seconds?! is that correct?!
 	xlog(@"time to collect tracks: %gs",
 		[timer seconds:TimerCollect]);
+
+	if (optArtwork) {
+		for (Item *track in tracks)
+			if ([track artworkCount] != 1)
+				printf("%8lu %s\n",
+					(unsigned long) [track artworkCount],
+					[[track filename] UTF8String]);
+		// TODO implement proper cleanup and then goto done
+		return 0;
+	}
 
 	albums = [NSMutableSet new];
 	totalDuration = [[Duration alloc] initWithMilliseconds:0];
