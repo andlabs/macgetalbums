@@ -4,7 +4,7 @@
 static BOOL optVerbose = NO;
 static BOOL optShowLengths = NO;
 static BOOL optShowCount = NO;
-// TODO option to force a specific collector
+const char *optCollector = NULL;
 // TODO option to spot tracks with either missing or duplicate album artwork (ScriptingBridge only)
 
 static void xlog(NSString *fmt, ...)
@@ -26,11 +26,10 @@ static const char *collectors[] = {
 // TODO use objc_getRequiredClass() instead?
 #define GETCLASS(c) objc_getClass(c)
 
-static id<Collector> tryCollector(const char *class, Timer *timer)
+static id<Collector> tryCollector(const char *class, Timer *timer, NSError **err)
 {
 	id<Collector> collector;
 	Class<Collector> collectorClass;
-	NSError *err = nil;
 
 	collectorClass = GETCLASS(class);
 	xlog(@"trying collector %s", class);
@@ -40,8 +39,8 @@ static id<Collector> tryCollector(const char *class, Timer *timer)
 		return nil;
 	}
 
-	collector = [[collectorClass alloc] initWithTimer:timer error:&err];
-	if (err != nil) {
+	collector = [[collectorClass alloc] initWithTimer:timer error:err];
+	if (*err != nil) {
 		xlog(@"error loading collector %s: %@; skipping",
 			class, err);
 		// TODO release err?
@@ -61,13 +60,14 @@ void usage(void)
 {
 	int i;
 
-	fprintf(stderr, "usage: %s [-chlv]\n", argv0);
+	fprintf(stderr, "usage: %s [-chlv] [-u collector]\n", argv0);
 	fprintf(stderr, "  -c - show track and album count and quit\n");
 	fprintf(stderr, "  -h - show this help\n");
 	fprintf(stderr, "  -l - show album lengths\n");
+	fprintf(stderr, "  -u - use the specified collector\n");
 	fprintf(stderr, "  -v - print verbose output\n");
 	// TODO prettyprint this somehow
-	fprintf(stderr, "known collectors, in order of which is tried without TODO:\n");
+	fprintf(stderr, "known collectors; without -u, each is tried in this order:\n");
 	for (i = 0; collectors[i] != NULL; i++) {
 		Class<Collector> class;
 
@@ -86,10 +86,11 @@ int main(int argc, char *argv[])
 	NSUInteger trackCount;
 	Timer *timer;
 	BOOL signCheckSucceeded;
+	NSError *err;
 	int i, c;
 
 	argv0 = argv[0];
-	while ((c = getopt(argc, argv, ":chlv")) != -1)
+	while ((c = getopt(argc, argv, ":chlu:v")) != -1)
 		switch (c) {
 		case 'v':
 			// TODO rename to -d for debug?
@@ -101,9 +102,15 @@ int main(int argc, char *argv[])
 		case 'c':
 			optShowCount = YES;
 			break;
+		case 'u':
+			optCollector = optarg;
+			break;
 		case '?':
 			fprintf(stderr, "error: unknown option -%c\n", optopt);
-			// fall through
+			usage();
+		case ':':
+			fprintf(stderr, "error: option -%c requires an argument\n", optopt);
+			usage();
 		case 'h':
 		default:
 			usage();
@@ -123,15 +130,41 @@ int main(int argc, char *argv[])
 
 	timer = [Timer new];
 
-	collector = nil;
-	for (i = 0; collectors[i] != NULL; i++) {
-		collector = tryCollector(collectors[i], timer);
-		if (collector != nil)
-			break;
-	}
-	if (collector == nil) {
-		fprintf(stderr, "error: no iTunes collector could be used; cannot continue\n");
-		return 1;
+	if (optCollector != NULL) {
+		collector = nil;
+		for (i = 0; collectors[i] != NULL; i++)
+			if (strcmp(collectors[i], optCollector) == 0)
+				break;
+		if (collectors[i] == NULL) {
+			// TODO print with quotes somehow
+			fprintf(stderr, "error: unknown collector %s\n", optCollector);
+			usage();
+		}
+		err = nil;
+		collector = tryCollector(optCollector, timer, &err);
+		if (collector == nil) {
+			// TODO
+			fprintf(stderr, "error: collector %s cannot be used\n", optCollector);
+			return 1;
+		}
+		if (err != nil) {
+			fprintf(stderr, "error trying collector %s: %s\n",
+				optCollector,
+				[[err description] UTF8String]);
+			return 1;
+		}
+	} else {
+		collector = nil;
+		for (i = 0; collectors[i] != NULL; i++) {
+			err = nil;
+			collector = tryCollector(collectors[i], timer, &err);
+			if (collector != nil)
+				break;
+		}
+		if (collector == nil) {
+			fprintf(stderr, "error: no iTunes collector could be used; cannot continue\n");
+			return 1;
+		}
 	}
 
 	tracks = [collector collectTracks];
