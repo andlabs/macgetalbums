@@ -5,6 +5,7 @@ static BOOL optVerbose = NO;
 static BOOL optShowLengths = NO;
 static BOOL optShowCount = NO;
 const char *optCollector = NULL;
+static BOOL optMinutes = NO;
 // TODO option to spot tracks with either missing or duplicate album artwork (ScriptingBridge only)
 // TODO option to build PDF
 
@@ -61,10 +62,11 @@ void usage(void)
 {
 	int i;
 
-	fprintf(stderr, "usage: %s [-chlv] [-u collector]\n", argv0);
+	fprintf(stderr, "usage: %s [-chlmv] [-u collector]\n", argv0);
 	fprintf(stderr, "  -c - show track and album count and total playing time and quit\n");
 	fprintf(stderr, "  -h - show this help\n");
 	fprintf(stderr, "  -l - show album lengths\n");
+	fprintf(stderr, "  -m - show times in minutes instead of hours and minutes\n");
 	fprintf(stderr, "  -u - use the specified collector\n");
 	fprintf(stderr, "  -v - print verbose output\n");
 	// TODO prettyprint this somehow
@@ -92,7 +94,7 @@ int main(int argc, char *argv[])
 	int i, c;
 
 	argv0 = argv[0];
-	while ((c = getopt(argc, argv, ":chlu:v")) != -1)
+	while ((c = getopt(argc, argv, ":chlmu:v")) != -1)
 		switch (c) {
 		case 'v':
 			// TODO rename to -d for debug?
@@ -106,6 +108,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'u':
 			optCollector = optarg;
+			break;
+		case 'm':
+			optMinutes = YES;
 			break;
 		case '?':
 			fprintf(stderr, "error: unknown option -%c\n", optopt);
@@ -205,12 +210,13 @@ int main(int argc, char *argv[])
 		printf("%lu tracks %lu albums %s total time\n",
 			(unsigned long) trackCount,
 			(unsigned long) [albums count],
-			[[totalDuration description] UTF8String]);
+			[[totalDuration stringWithOnlyMinutes:optMinutes] UTF8String]);
 		goto done;
 	}
 
 	// TODO is tab safe to use?
 	// TODO switch to foreach
+	// TODO change variable name from t to a or album
 	[albums enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
 		Item *t = (Item *) obj;
 
@@ -220,7 +226,7 @@ int main(int argc, char *argv[])
 			[[t album] UTF8String]);
 		if (optShowLengths)
 			printf("\t%s",
-				[[[t length] description] UTF8String]);
+				[[[t length] stringWithOnlyMinutes:optMinutes] UTF8String]);
 		printf("\n");
 	}];
 

@@ -49,6 +49,7 @@ enum {
 - (void)addMilliseconds:(NSUInteger)val;
 - (void)addSeconds:(double)val;
 - (NSUInteger)milliseconds;
+- (NSString *)stringWithOnlyMinutes:(BOOL)onlyMinutes;
 @end
 
 // item.m

@@ -80,7 +80,7 @@
 	return ms;
 }
 
-- (NSString *)description
+- (NSString *)stringWithOnlyMinutes:(BOOL)onlyMinutes
 {
 	NSUInteger ms;
 	NSUInteger h, m, s;
@@ -91,7 +91,7 @@
 		s++;
 	m = s / 60;
 	s = s % 60;
-	if (m < 60)
+	if (onlyMinutes || m < 60)
 		return [NSString stringWithFormat:@"%ju:%02ju",
 			(uintmax_t) m, (uintmax_t) s];
 	h = m / 60;
