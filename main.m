@@ -180,20 +180,17 @@ int main(int argc, char *argv[])
 	for (Item *track in tracks) {
 		Item *existing;
 
-		// If the album is already in the set, update the year and
-		// the length; otherwise, just add the track to start off this
-		// new album (effectively turning a track Item into an
-		// album Item).
+		// We don't reuse track items for album items.
+		// Instead we copy the first track in an album and then
+		// combine the other tracks with that copy.
 		existing = (Item *) [albums member:track];
-		if (existing != nil) {
-			// We want to take the earliest release date, to
-			// reflect the original release of this album.
-			if ([existing year] > [track year])
-				[existing setYear:[track year]];
-			[[existing length] add:[track length]];
-			continue;
+		if (existing != nil)
+			[existing combineWith:track];
+		else {
+			existing = [track copy];
+			[albums addObject:existing];
+			[existing release];		// and release our initial reference
 		}
-		[albums addObject:track];
 	}
 	[timer end];
 	xlog(@"time to process tracks: %gs",
