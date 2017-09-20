@@ -61,9 +61,8 @@ enum {
 - (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa length:(Duration *)l;
 - (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUInteger)ms;
 - (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthSeconds:(double)sec;
+- (void)combineWith:(Item *)i2;
 - (NSInteger)year;
-// TODO replace this with combineWith:
-- (void)setYear:(NSInteger)year;
 - (NSString *)artist;
 - (NSString *)album;
 - (Duration *)length;
