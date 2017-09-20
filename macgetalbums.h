@@ -22,6 +22,7 @@
 enum {
 	TimerLoad = 1,
 	TimerCollect,
+	TimerConvert,
 	TimerSort,
 	nTimers,
 };
