@@ -1,6 +1,8 @@
 // 8 june 2017
 #import "macgetalbums.h"
 
+// TODO doesn't handle compilations
+
 static BOOL optVerbose = NO;
 static BOOL optShowLengths = NO;
 static BOOL optShowCount = NO;
