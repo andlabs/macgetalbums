@@ -38,7 +38,7 @@ enum {
 
 // duration.m
 // TODO swap seconds and ms? seconds came first
-@interface Duration : NSObject {
+@interface Duration : NSObject<NSCopying> {
 	BOOL hasSeconds;
 	NSUInteger msec;
 	double sec;
@@ -52,7 +52,7 @@ enum {
 @end
 
 // item.m
-@interface Item : NSObject {
+@interface Item : NSObject<NSCopying> {
 	NSInteger year;
 	NSString *artist;
 	NSString *album;
@@ -62,7 +62,7 @@ enum {
 - (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUInteger)ms;
 - (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthSeconds:(double)sec;
 - (NSInteger)year;
-// TODO make this unnecessary somehow
+// TODO replace this with combineWith:
 - (void)setYear:(NSInteger)year;
 - (NSString *)artist;
 - (NSString *)album;

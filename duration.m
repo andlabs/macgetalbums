@@ -31,6 +31,20 @@
 	return self;
 }
 
+- (id)copyWithZone:(NSZone *)zone
+{
+	Duration *d;
+
+	// thanks to mikeash in irc.freenode.net/#macdev for suggesting using [self class]
+	d = [[[self class] allocWithZone:zone] initWithMilliseconds:0];
+	if (d) {		// TODO is this if correct?
+		d->hasSeconds = self->hasSeconds;
+		d->msec = self->msec;
+		d->sec = self->sec;
+	}
+	return d;
+}
+
 - (void)add:(Duration *)d
 {
 	[self addMilliseconds:d->msec];

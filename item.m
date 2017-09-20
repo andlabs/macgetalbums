@@ -36,6 +36,7 @@ static const struct {
 		// use the album artist if there, track artist otherwise
 		self->artist = aa;
 		// iTunesLibrary.framework does this
+		// we do this too in -copyWithZone: below
 		if (self->artist == nil)
 			self->artist = @"";
 		if ([self->artist isEqual:@""])
@@ -67,7 +68,7 @@ static const struct {
 		album:a
 		albumArtist:aa
 		length:l];
-	[l release];
+	[l release];			// release the initial reference
 	return self;
 }
 
@@ -81,8 +82,23 @@ static const struct {
 		album:a
 		albumArtist:aa
 		length:l];
-	[l release];
+	[l release];			// release the initial reference
 	return self;
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+	Item *i;
+	Duration *l2;
+
+	l2 = [self->length copy];
+	i = [[[self class] allocWithZone:zone] initWithYear:self->year
+		trackArtist:self->artist
+		album:self->album
+		albumArtist:nil		// see above
+		length:l2];
+	[l2 release];			// release the initial reference
+	return i;
 }
 
 - (void)dealloc
