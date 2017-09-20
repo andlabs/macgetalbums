@@ -27,7 +27,7 @@ static const struct {
 
 @implementation Item
 
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa length:(Duration *)l
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa length:(Duration *)l filename:(NSString *)fn artworkCount:(NSUInteger)ac
 {
 	self = [super init];
 	if (self) {
@@ -47,6 +47,11 @@ static const struct {
 		[self->album retain];
 		self->length = l;
 		[self->length retain];
+		self->filename = fn;
+		if (self->filename == nil)
+			self->filename = @"";
+		[self->filename retain];
+		self->artworkCount = ac;
 
 		// handle overrides
 		for (i = 0; overrides[i].artist != nil; i++)
@@ -59,7 +64,7 @@ static const struct {
 	return self;
 }
 
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUInteger)ms
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUInteger)ms filename:(NSString *)fn artworkCount:(NSUInteger)ac
 {
 	Duration *l;
 
@@ -68,12 +73,14 @@ static const struct {
 		trackArtist:ta
 		album:a
 		albumArtist:aa
-		length:l];
+		length:l
+		filename:fn
+		artworkCount:ac];
 	[l release];			// release the initial reference
 	return self;
 }
 
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthSeconds:(double)sec
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthSeconds:(double)sec filename:(NSString *)fn artworkCount:(NSUInteger)ac
 {
 	Duration *l;
 
@@ -82,7 +89,9 @@ static const struct {
 		trackArtist:ta
 		album:a
 		albumArtist:aa
-		length:l];
+		length:l
+		filename:fn
+		artworkCount:ac];
 	[l release];			// release the initial reference
 	return self;
 }
@@ -97,7 +106,9 @@ static const struct {
 		trackArtist:self->artist
 		album:self->album
 		albumArtist:nil		// see above
-		length:l2];
+		length:l2
+		filename:self->filename
+		artworkCount:self->artworkCount];
 	[l2 release];			// release the initial reference
 	return i;
 }
@@ -107,6 +118,7 @@ static const struct {
 	[self->artist release];
 	[self->album release];
 	[self->length release];
+	[self->filename release];
 	[super dealloc];
 }
 
@@ -137,6 +149,16 @@ static const struct {
 - (Duration *)length
 {
 	return self->length;
+}
+
+- (NSString *)filename
+{
+	return self->filename;
+}
+
+- (NSUInteger)artworkCount
+{
+	return self->artworkCount;
 }
 
 // see also https://www.mikeash.com/pyblog/friday-qa-2010-06-18-implementing-equality-and-hashing.html (thanks mattstevens in irc.freenode.net #macdev)

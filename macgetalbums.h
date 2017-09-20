@@ -59,15 +59,19 @@ extern NSString *const compilationArtist;
 	NSString *artist;
 	NSString *album;
 	Duration *length;
+	NSString *filename;
+	NSUInteger artworkCount;
 }
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa length:(Duration *)l;
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUInteger)ms;
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthSeconds:(double)sec;
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa length:(Duration *)l filename:(NSString *)fn artworkCount:(NSUInteger)ac;
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUInteger)ms filename:(NSString *)fn artworkCount:(NSUInteger)ac;
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthSeconds:(double)sec filename:(NSString *)fn artworkCount:(NSUInteger)ac;
 - (void)combineWith:(Item *)i2;
 - (NSInteger)year;
 - (NSString *)artist;
 - (NSString *)album;
 - (Duration *)length;
+- (NSString *)filename;
+- (NSUInteger)artworkCount;
 @end
 
 // scriptingbridge.m and ituneslibrary.m
@@ -76,7 +80,7 @@ extern NSString *const compilationArtist;
 + (instancetype)alloc;
 + (NSString *)collectorDescription;
 + (BOOL)needsSigning;
-// TODO canGetArtworkCount (iTunesLibrary can't? TODO)
++ (BOOL)canGetArtworkCount;
 - (id)initWithTimer:(Timer *)t error:(NSError **)err;
 - (NSArray *)collectTracks;
 @end

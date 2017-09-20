@@ -1,6 +1,8 @@
 // 3 september 2017
 #import "macgetalbums.h"
 
+// TODO determine proper memory management
+
 // To avoid a build-time dependency on iTunesLibrary.framework, recreate the relevant functionality with protocols so we don't have to include the real headers.
 // Thanks to dexter0 in irc.freenode.net/#macdev.
 @protocol ourITLibArtist<NSObject>
@@ -20,6 +22,7 @@
 - (NSUInteger)totalTime;
 - (NSDate *)releaseDate;
 - (NSUInteger)year;
+- (NSURL *)location;
 @end
 
 @protocol ourITLibrary<NSObject>
@@ -45,6 +48,12 @@
 + (BOOL)needsSigning
 {
 	return YES;
+}
+
++ (BOOL)canGetArtworkCount
+{
+	// TODO investigate this
+	return NO;
 }
 
 - (id)initWithTimer:(Timer *)t error:(NSError **)err
@@ -132,7 +141,11 @@
 			trackArtist:trackArtist
 			album:[[track album] title]
 			albumArtist:albumArtist
-			lengthMilliseconds:[track totalTime]];
+			lengthMilliseconds:[track totalTime]
+			// TODO this only considers actual files
+			// TODO does -path make a copy?
+			filename:[[track location] path]
+			artworkCount:0];
 		[items addObject:item];
 		[item release];		// and release the initial reference
 	}

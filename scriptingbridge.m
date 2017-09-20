@@ -1,6 +1,8 @@
 // 22 august 2017
 #import "macgetalbums.h"
 
+// TODO determine proper memory management
+
 // TODO figure out how far back we can have ivars in @implementation
 @implementation ScriptingBridgeCollector {
 	Timer *timer;
@@ -15,6 +17,11 @@
 + (BOOL)needsSigning
 {
 	return NO;
+}
+
++ (BOOL)canGetArtworkCount
+{
+	return YES;
 }
 
 - (id)initWithTimer:(Timer *)t error:(NSError **)err
@@ -73,7 +80,11 @@
 			trackArtist:[track artist]
 			album:[track album]
 			albumArtist:[track albumArtist]
-			lengthSeconds:[track duration]];
+			lengthSeconds:[track duration]
+			// TODO -location isn't available for all tracks (and if we just use id, clang will chose a CGFloat-based method instead :| )
+			// TODO does path make a copy?
+			filename:[((NSURL *) [((iTunesFileTrack *) track) location]) path]
+			artworkCount:[[track artworks] count]];
 		[items addObject:item];
 		[item release];		// and release the initial reference
 	}
