@@ -6,6 +6,7 @@ static BOOL optShowLengths = NO;
 static BOOL optShowCount = NO;
 const char *optCollector = NULL;
 // TODO option to spot tracks with either missing or duplicate album artwork (ScriptingBridge only)
+// TODO option to build PDF
 
 static void xlog(NSString *fmt, ...)
 {
@@ -61,7 +62,7 @@ void usage(void)
 	int i;
 
 	fprintf(stderr, "usage: %s [-chlv] [-u collector]\n", argv0);
-	fprintf(stderr, "  -c - show track and album count and quit\n");
+	fprintf(stderr, "  -c - show track and album count and total playing time and quit\n");
 	fprintf(stderr, "  -h - show this help\n");
 	fprintf(stderr, "  -l - show album lengths\n");
 	fprintf(stderr, "  -u - use the specified collector\n");
@@ -86,6 +87,7 @@ int main(int argc, char *argv[])
 	NSUInteger trackCount;
 	Timer *timer;
 	BOOL signCheckSucceeded;
+	Duration *totalDuration;
 	NSError *err;
 	int i, c;
 
@@ -173,6 +175,7 @@ int main(int argc, char *argv[])
 		[timer seconds:TimerCollect]);
 
 	albums = [NSMutableSet new];
+	totalDuration = [[Duration alloc] initWithMilliseconds:0];
 	[timer start:TimerSort];
 	trackCount = [tracks count];
 	for (Item *track in tracks) {
@@ -189,6 +192,7 @@ int main(int argc, char *argv[])
 			[albums addObject:existing];
 			[existing release];		// and release our initial reference
 		}
+		[totalDuration add:[track length]];
 	}
 	[timer end];
 	xlog(@"time to process tracks: %gs",
@@ -198,9 +202,10 @@ int main(int argc, char *argv[])
 	[timer release];
 
 	if (optShowCount) {
-		printf("%lu tracks %lu albums\n",
+		printf("%lu tracks %lu albums %s total time\n",
 			(unsigned long) trackCount,
-			(unsigned long) [albums count]);
+			(unsigned long) [albums count],
+			[[totalDuration description] UTF8String]);
 		goto done;
 	}
 
@@ -220,6 +225,6 @@ int main(int argc, char *argv[])
 	}];
 
 done:
-	// TODO clean up here?
+	// TODO clean up
 	return 0;
 }
