@@ -63,6 +63,7 @@
 	tracks = [self->iTunes tracks];
 	[self->timer end];
 
+	[self->timer start:TimerConvert];
 	items = [[NSMutableArray alloc] initWithCapacity:[tracks count]];
 	// SBElementArray is a subclass of NSMutableArray so this will work
 	for (iTunesTrack *track in tracks) {
@@ -88,6 +89,7 @@
 		[items addObject:item];
 		[item release];		// and release the initial reference
 	}
+	[self->timer end];
 
 	// TODO is this release correct?
 	[tracks release];

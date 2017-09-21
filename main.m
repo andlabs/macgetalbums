@@ -190,9 +190,10 @@ int main(int argc, char *argv[])
 	}
 
 	tracks = [collector collectTracks];
-	// TODO with Scripting Bridge this is ~1e-5 seconds?! is that correct?!
 	xlog(@"time to collect tracks: %gs",
 		[timer seconds:TimerCollect]);
+	xlog(@"time to convert tracks to our internal data structure format: %gs",
+		[timer seconds:TimerConvert]);
 
 	if (optArtwork) {
 		for (Item *track in tracks)

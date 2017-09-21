@@ -126,7 +126,7 @@
 	tracks = [self->library allMediaItems];
 	[self->timer end];
 
-	// TODO add a TimerConvert
+	[self->timer start:TimerConvert];
 	items = [[NSMutableArray alloc] initWithCapacity:[tracks count]];
 	// TODO does this only cover music or not? compare to the ScriptingBridge code
 	for (id<ourITLibMediaItem> track in tracks) {
@@ -151,6 +151,7 @@
 		[items addObject:item];
 		[item release];		// and release the initial reference
 	}
+	[self->timer end];
 
 	// TODO why is this release incorrect?
 //	[tracks release];
