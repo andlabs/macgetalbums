@@ -92,7 +92,7 @@ extern NSString *const compilationArtist;
 @interface iTunesLibraryCollector : NSObject<Collector>
 @end
 
-// amisigned.m
-extern BOOL amISigned;
-extern OSStatus amISignedErr;
+// issigned.m
+extern BOOL isSigned;
+extern OSStatus isSignedErr;
 extern BOOL checkIfSigned(void);

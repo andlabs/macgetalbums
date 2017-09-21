@@ -3,8 +3,8 @@
 OUT = macgetalbums
 
 MFILES = \
-	amisigned.m \
 	duration.m \
+	issigned.m \
 	item.m \
 	ituneslibrary.m \
 	main.m \

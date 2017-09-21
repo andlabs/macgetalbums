@@ -36,7 +36,7 @@ static id<Collector> tryCollector(const char *class, Timer *timer, NSError **err
 	collectorClass = GETCLASS(class);
 	xlog(@"trying collector %s", class);
 
-	if (!amISigned && [collectorClass needsSigning]) {
+	if (!isSigned && [collectorClass needsSigning]) {
 		xlog(@"collector %s needs signing and we aren't signed; skipping", class);
 		return nil;
 	}
@@ -133,8 +133,8 @@ int main(int argc, char *argv[])
 
 	signCheckSucceeded = checkIfSigned();
 	if (!signCheckSucceeded)
-		xlog(@"signed-code checking failed with error %d; assuming not signed", (int) amISignedErr);
-	else if (amISigned)
+		xlog(@"signed-code checking failed with error %d; assuming not signed", (int) isSignedErr);
+	else if (isSigned)
 		xlog(@"we are signed");
 	else
 		xlog(@"we are not signed");
