@@ -15,7 +15,7 @@
 #import <objc/runtime.h>
 #import "iTunes.h"
 
-// TODO damn MacTypes.h
+// damn MacTypes.h already having a Duration
 #define Duration mgaDuration
 
 // timer.m
@@ -38,7 +38,6 @@ enum {
 @end
 
 // duration.m
-// TODO swap seconds and ms? seconds came first
 @interface Duration : NSObject<NSCopying> {
 	BOOL hasSeconds;
 	NSUInteger msec;
@@ -79,7 +78,7 @@ extern NSString *const compilationArtist;
 
 // scriptingbridge.m and ituneslibrary.m
 @protocol Collector<NSObject>
-// TODO apparently this isn't in the NSObject protocol?
+// apparently this isn't in the NSObject protocol, but we need it
 + (instancetype)alloc;
 + (NSString *)collectorDescription;
 + (BOOL)needsSigning;
