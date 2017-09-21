@@ -60,12 +60,14 @@ extern NSString *const compilationArtist;
 	NSString *artist;
 	NSString *album;
 	Duration *length;
-	NSString *filename;
+	NSString *title;
+	NSInteger trackNumber;
+	NSInteger discNumber;
 	NSUInteger artworkCount;
 }
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa length:(Duration *)l filename:(NSString *)fn artworkCount:(NSUInteger)ac;
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUInteger)ms filename:(NSString *)fn artworkCount:(NSUInteger)ac;
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthSeconds:(double)sec filename:(NSString *)fn artworkCount:(NSUInteger)ac;
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa length:(Duration *)l title:(NSString *)tt trackNumber:(NSInteger)tn discNumber:(NSInteger)dn artworkCount:(NSUInteger)ac;
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUInteger)ms title:(NSString *)tt trackNumber:(NSInteger)tn discNumber:(NSInteger)dn artworkCount:(NSUInteger)ac;
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthSeconds:(double)sec title:(NSString *)tt trackNumber:(NSInteger)tn discNumber:(NSInteger)dn artworkCount:(NSUInteger)ac;
 - (void)combineWith:(Item *)i2;
 - (NSInteger)year;
 - (NSString *)artist;
@@ -73,6 +75,7 @@ extern NSString *const compilationArtist;
 - (Duration *)length;
 - (NSString *)filename;
 - (NSUInteger)artworkCount;
+- (NSString *)formattedNumberTitleArtistAlbum;
 @end
 
 // scriptingbridge.m and ituneslibrary.m

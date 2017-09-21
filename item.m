@@ -27,7 +27,7 @@ static const struct {
 
 @implementation Item
 
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa length:(Duration *)l filename:(NSString *)fn artworkCount:(NSUInteger)ac
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa length:(Duration *)l title:(NSString *)tt trackNumber:(NSInteger)tn discNumber:(NSInteger)dn artworkCount:(NSUInteger)ac
 {
 	self = [super init];
 	if (self) {
@@ -47,10 +47,10 @@ static const struct {
 		[self->album retain];
 		self->length = l;
 		[self->length retain];
-		self->filename = fn;
-		if (self->filename == nil)
-			self->filename = @"";
-		[self->filename retain];
+		self->title = tt;
+		[self->title retain];
+		self->trackNumber = tn;
+		self->discNumber = dn;
 		self->artworkCount = ac;
 
 		// handle overrides
@@ -64,7 +64,7 @@ static const struct {
 	return self;
 }
 
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUInteger)ms filename:(NSString *)fn artworkCount:(NSUInteger)ac
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUInteger)ms title:(NSString *)tt trackNumber:(NSInteger)tn discNumber:(NSInteger)dn artworkCount:(NSUInteger)ac
 {
 	Duration *l;
 
@@ -74,13 +74,15 @@ static const struct {
 		album:a
 		albumArtist:aa
 		length:l
-		filename:fn
+		title:tt
+		trackNumber:tn
+		discNumber:dn
 		artworkCount:ac];
 	[l release];			// release the initial reference
 	return self;
 }
 
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthSeconds:(double)sec filename:(NSString *)fn artworkCount:(NSUInteger)ac
+- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthSeconds:(double)sec title:(NSString *)tt trackNumber:(NSInteger)tn discNumber:(NSInteger)dn artworkCount:(NSUInteger)ac
 {
 	Duration *l;
 
@@ -90,7 +92,9 @@ static const struct {
 		album:a
 		albumArtist:aa
 		length:l
-		filename:fn
+		title:tt
+		trackNumber:tn
+		discNumber:dn
 		artworkCount:ac];
 	[l release];			// release the initial reference
 	return self;
@@ -107,7 +111,9 @@ static const struct {
 		album:self->album
 		albumArtist:nil		// see above
 		length:l2
-		filename:self->filename
+		title:self->title
+		trackNumber:self->trackNumber
+		discNumber:self->discNumber
 		artworkCount:self->artworkCount];
 	[l2 release];			// release the initial reference
 	return i;
@@ -118,7 +124,7 @@ static const struct {
 	[self->artist release];
 	[self->album release];
 	[self->length release];
-	[self->filename release];
+	[self->title release];
 	[super dealloc];
 }
 
@@ -175,14 +181,14 @@ static const struct {
 		[self->album isEqual:b->album];
 }
 
-// TODO is this needed?
-- (NSString *)description
+- (NSString *)formattedNumberTitleArtistAlbum
 {
-	return [NSString stringWithFormat:@"%ld | %@ | %@ | %@",
-		(long) (self->year),
-		self->artist,
-		self->album,
-		self->length];
+	NSString *base;
+
+	base = [NSString stringWithFormat:@"%@ (%@, %@)", self->title, self->artist, self->album];
+	if (self->discNumber == 0)
+		return [NSString stringWithFormat:@"   %02ld %@", (long) (self->trackNumber), base];
+	return [NSString stringWithFormat:@"% 2ld-%02ld %@", (long) (self->discNumber), (long) (self->trackNumber), base];
 }
 
 @end
