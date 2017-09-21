@@ -4,7 +4,7 @@
 // thanks to https://oleb.net/blog/2012/02/checking-code-signing-and-sandboxing-status-in-code/ for pointing me toward the Code Signing Services
 
 BOOL isSigned = NO;
-OSStatus isSignedError = errSecSuccess;
+OSStatus isSignedErr = errSecSuccess;
 
 // returns YES if the check succeeded; NO if it did not
 BOOL checkIfSigned(void)
@@ -14,7 +14,7 @@ BOOL checkIfSigned(void)
 	isSignedErr = SecCodeCopySelf(kSecCSDefaultFlags, &me);
 	if (isSignedErr != errSecSuccess)
 		return NO;
-	isSignedError = SecCodeCheckValidity(me, kSecCSDefaultFlags, NULL);
+	isSignedErr = SecCodeCheckValidity(me, kSecCSDefaultFlags, NULL);
 	// this is correct for SecCodeRefs (it bridges to id according to Security/CFCommon.h); thanks Zorg and gwynne in irc.freenode.net/#macdev
 	CFRelease(me);
 	switch (isSignedErr) {
