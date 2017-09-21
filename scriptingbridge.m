@@ -2,6 +2,7 @@
 #import "macgetalbums.h"
 
 // TODO determine proper memory management
+// TODO make the album artwork stuff optional to make this faster in the general case?
 
 // TODO figure out how far back we can have ivars in @implementation
 @implementation ScriptingBridgeCollector {
