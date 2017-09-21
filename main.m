@@ -9,6 +9,9 @@ static BOOL optMinutes = NO;
 static BOOL optArtwork = NO;
 // TODO option to build PDF
 
+// TODO make sure this isn't global
+static BOOL isSigned = NO;
+
 static void xlog(NSString *fmt, ...)
 {
 	va_list ap;
@@ -89,7 +92,6 @@ int main(int argc, char *argv[])
 	NSArray *tracks;
 	NSUInteger trackCount;
 	Timer *timer;
-	BOOL signCheckSucceeded;
 	Duration *totalDuration;
 	NSError *err;
 	int i, c;
@@ -131,13 +133,16 @@ int main(int argc, char *argv[])
 	if (argc != 0)
 		usage();
 
-	signCheckSucceeded = checkIfSigned();
-	if (!signCheckSucceeded)
-		xlog(@"signed-code checking failed with error %d; assuming not signed", (int) isSignedErr);
-	else if (isSigned)
-		xlog(@"we are signed");
+	isSigned = checkIfSigned(&err);
+	if (!isSigned)
+		if (err != nil) {
+			xlog(@"signed-code checking failed: %@; assuming not signed", err);
+			[err release];
+			err = nil;
+		} else
+			xlog(@"we are not signed");
 	else
-		xlog(@"we are not signed");
+		xlog(@"we are signed");
 
 	timer = [Timer new];
 
