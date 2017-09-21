@@ -3,8 +3,6 @@
 
 static mach_timebase_info_data_t timebase;
 
-// TODO consider https://developer.apple.com/documentation/foundation/nsprocessinfo/1414553-systemuptime?language=objc; it may not be as precise on the super-tight end, but it's in seconds and we won't need this class (thanks mikeash in irc.freenode.net #macdev)
-
 @implementation Timer
 
 + (void)initialize
@@ -49,12 +47,61 @@ static mach_timebase_info_data_t timebase;
 	return duration * timebase.numer / timebase.denom;
 }
 
-- (double)seconds:(int)t
+- (NSString *)stringFor:(int)t
 {
 	uint64_t nsec;
+	double d;
+	uint64_t hours, minutes;
+	NSMutableString *ret;
+	NSString *add;
 
 	nsec = [self nanoseconds:t];
-	return ((double) nsec) / ((double) NSEC_PER_SEC);
+	if (nsec == 0)
+		return [@"0s" copy];
+	if (nsec < 1000) {
+		NSString *fmt;
+
+		fmt = [[NSString alloc] initWithFormat:@"%%%sns", PRIu64];
+		ret = [[NSMutableString alloc] initWithFormat:fmt, nsec];
+		[fmt release];
+		return ret;
+	}
+	if (nsec < 1000000) {
+		d = ((double) nsec) / 1000;
+		return [[NSString alloc] initWithFormat:@"%.3gus", d];
+	}
+	if (nsec < 1000000000) {
+		d = ((double) nsec) / 1000000;
+		return [[NSString alloc] initWithFormat:@"%.6gms", d];
+	}
+	hours = nsec / 3600000000000;
+	nsec %= 3600000000000;
+	ret = [NSMutableString new];
+	if (hours != 0) {
+		NSString *fmt;
+
+		fmt = [[NSString alloc] initWithFormat:@"%%%sh", PRIu64];
+		add = [[NSString alloc] initWithFormat:fmt, hours];
+		[fmt release];
+		[ret appendString:add];
+		[add release];
+	}
+	minutes = nsec / 60000000000;
+	nsec %= 60000000000;
+	if (minutes != 0) {
+		NSString *fmt;
+
+		fmt = [[NSString alloc] initWithFormat:@"%%%sm", PRIu64];
+		add = [[NSString alloc] initWithFormat:fmt, minutes];
+		[fmt release];
+		[ret appendString:add];
+		[add release];
+	}
+	d = ((double) nsec) / 1000000000;
+	add = [[NSString alloc] initWithFormat:@"%.9gs", d];
+	[ret appendString:add];
+	[add release];
+	return ret;
 }
 
 @end

@@ -34,7 +34,7 @@ enum {
 - (void)start:(int)t;
 - (void)end;
 - (uint64_t)nanoseconds:(int)t;
-- (double)seconds:(int)t;
+- (NSString *)stringFor:(int)t;
 @end
 
 // duration.m

@@ -52,8 +52,8 @@ static id<Collector> tryCollector(const char *class, Timer *timer, NSError **err
 		[collector release];
 		return nil;
 	}
-	xlog(@"time to load iTunes library: %gs",
-		[timer seconds:TimerLoad]);
+	xlog(@"time to load iTunes library: %s",
+		[[timer stringFor:TimerLoad] UTF8String]);
 	return collector;
 }
 
@@ -195,10 +195,10 @@ int main(int argc, char *argv[])
 	}
 
 	tracks = [collector collectTracks];
-	xlog(@"time to collect tracks: %gs",
-		[timer seconds:TimerCollect]);
-	xlog(@"time to convert tracks to our internal data structure format: %gs",
-		[timer seconds:TimerConvert]);
+	xlog(@"time to collect tracks: %s",
+		[[timer stringFor:TimerCollect] UTF8String]);
+	xlog(@"time to convert tracks to our internal data structure format: %s",
+		[[timer stringFor:TimerConvert] UTF8String]);
 
 	if (optArtwork) {
 		for (Item *track in tracks)
@@ -231,8 +231,8 @@ int main(int argc, char *argv[])
 		[totalDuration add:[track length]];
 	}
 	[timer end];
-	xlog(@"time to process tracks: %gs",
-		[timer seconds:TimerSort]);
+	xlog(@"time to process tracks: %s",
+		[[timer stringFor:TimerSort] UTF8String]);
 	[tracks release];
 	[collector release];
 	[timer release];
