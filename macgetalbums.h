@@ -93,6 +93,4 @@ extern NSString *const compilationArtist;
 @end
 
 // issigned.m
-extern BOOL isSigned;
-extern OSStatus isSignedErr;
-extern BOOL checkIfSigned(void);
+extern BOOL checkIfSigned(NSError **err);
