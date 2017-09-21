@@ -84,7 +84,9 @@ extern NSString *const compilationArtist;
 + (NSString *)collectorDescription;
 + (BOOL)needsSigning;
 + (BOOL)canGetArtworkCount;
+// err is not owned by you on return
 - (id)initWithTimer:(Timer *)t error:(NSError **)err;
+// the returned array IS owned by you
 - (NSArray *)collectTracks;
 @end
 @interface ScriptingBridgeCollector : NSObject<Collector>

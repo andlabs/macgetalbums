@@ -1,39 +1,35 @@
 // 3 september 2017
 #import "macgetalbums.h"
 
-// TODO determine proper memory management
-
 // To avoid a build-time dependency on iTunesLibrary.framework, recreate the relevant functionality with protocols so we don't have to include the real headers.
 // Thanks to dexter0 in irc.freenode.net/#macdev.
 @protocol ourITLibArtist<NSObject>
-- (NSString *)name;
+- (NSString *)name;				// does not return retained
 @end
 
 @protocol ourITLibAlbum<NSObject>
-- (NSString *)title;
-- (NSString *)albumArtist;
+- (NSString *)title;				// does not return retained
+- (NSString *)albumArtist;			// does not return retained
 - (BOOL)isCompilation;
 - (NSUInteger)discNumber;
 @end
 
 @protocol ourITLibMediaItem<NSObject>
-- (NSString *)title;
-- (id<ourITLibArtist>)artist;
-- (id<ourITLibAlbum>)album;
+- (NSString *)title;				// does not return retained
+- (id<ourITLibArtist>)artist;		// does not return retained
+- (id<ourITLibAlbum>)album;		// does not return retained
 - (NSUInteger)totalTime;
-- (NSDate *)releaseDate;
 - (NSUInteger)year;
-- (NSURL *)location;
 - (NSUInteger)trackNumber;
 @end
 
 @protocol ourITLibrary<NSObject>
 - (instancetype)initWithAPIVersion:(NSString *)version error:(NSError **)err;
-- (NSArray *)allMediaItems;
+- (NSArray *)allMediaItems;		// does not return retained
 @end
 
-// TODO should this be autoreleased?
-#define genericError() [[NSError alloc] initWithDomain:NSMachErrorDomain code:KERN_FAILURE userInfo:nil]
+// NSErrors returned by Cocoa functions have to be unowned, even if they are CFErrorRef-based (thanks to mikeash in irc.freenode.net/#macdev, and possibly others too)
+#define genericError() [NSError errorWithDomain:NSMachErrorDomain code:KERN_FAILURE userInfo:nil]
 
 // TODO figure out how far back we can have ivars in @implementation
 @implementation iTunesLibraryCollector {
@@ -80,7 +76,7 @@
 			goto out;
 		}
 		if ([self->framework loadAndReturnError:err] == NO) {
-			// Apple's docs are self-contradictory as to whether err is non-nil here.
+			// Apple's docs are self-contradictory as to whether err is guaranteed to be non-nil here.
 			if (*err == nil)
 				*err = genericError();
 			goto out;
@@ -153,8 +149,7 @@
 	}
 	[self->timer end];
 
-	// TODO why is this release incorrect?
-//	[tracks release];
+	// don't release anything; we don't own references to them
 	return items;
 }
 
