@@ -1,9 +1,6 @@
 // 22 august 2017
 #import "macgetalbums.h"
 
-// TODO determine proper memory management
-// TODO make the album artwork stuff optional to make this faster in the general case?
-
 // TODO figure out how far back we can have ivars in @implementation
 @implementation ScriptingBridgeCollector {
 	Timer *timer;
@@ -37,8 +34,7 @@
 		// However, the headers say this is equivalent to calling init followed by autorelease (the usual convention for methods like this).
 		// Let's be safe and use the autorelease version; we can always retain it ourselves.
 		self->iTunes = (iTunesApplication *) [SBApplication applicationWithBundleIdentifier:@"com.apple.iTunes"];
-		// TODO should we call get on this?
-		// TODO include the retain in the timer, just to be safe?
+		// TODO should we call [self->iTunes get] to get an accurate launch time in case iTunes isn't running, or will that not work?
 		[self->iTunes retain];
 		[self->timer end];
 
@@ -57,43 +53,74 @@
 
 - (NSArray *)collectTracks
 {
-	SBElementArray *tracks;
 	NSMutableArray *items;
+	NSUInteger i, nTracks;
 
-	[self->timer start:TimerCollect];
-	tracks = [self->iTunes tracks];
-	[self->timer end];
+	@autoreleasepool {
+		// all of these variables are either autoreleased or not owned by us, judging from sample code and Cocoa memory management rules and assumptions about what methods get called by sdp-generated headers
+		SBElementArray *tracks;
+		NSArray *allArtists;
+		NSArray *allAlbumArtists;
+		NSArray *allCompilations;
+		NSArray *allYears;
+		NSArray *allAlbums;
+		NSArray *allDurations;
+		NSArray *allNames;
+		NSArray *allTrackNumbers;
+		NSArray *allDiscNumbers;
 
-	[self->timer start:TimerConvert];
-	items = [[NSMutableArray alloc] initWithCapacity:[tracks count]];
-	// SBElementArray is a subclass of NSMutableArray so this will work
-	for (iTunesTrack *track in tracks) {
-		Item *item;
-		NSString *trackArtist, *albumArtist;
+		[self->timer start:TimerCollect];
+		tracks = [self->iTunes tracks];
+		nTracks = [tracks count];
+		allArtists = [tracks arrayByApplyingSelector:@selector(artist)];
+		allAlbumArtists = [tracks arrayByApplyingSelector:@selector(albumArtist)];
+		allCompilations = [tracks arrayByApplyingSelector:@selector(compilation)];
+		allYears = [tracks arrayByApplyingSelector:@selector(year)];
+		allAlbums = [tracks arrayByApplyingSelector:@selector(album)];
+		allDurations = [tracks arrayByApplyingSelector:@selector(duration)];
+		allNames = [tracks arrayByApplyingSelector:@selector(name)];
+		allTrackNumbers = [tracks arrayByApplyingSelector:@selector(trackNumber)];
+		allDiscNumbers = [tracks arrayByApplyingSelector:@selector(discNumber)];
+		// sadly we can't do this with artworks, as that'll just give uxxx a flat list of nTracks iTunesArtwork instances which won't work for whatever reason
+		// alas, that leaves us with having to iterate below :/
+		// TODO is there another way?
+		[self->timer end];
 
-		trackArtist = [track artist];
-		albumArtist = [track albumArtist];
-		// TODO this always returns NO for some reason
-		if ([track compilation]) {
-			trackArtist = compilationArtist;
-			albumArtist = compilationArtist;
+		[self->timer start:TimerConvert];
+		items = [[NSMutableArray alloc] initWithCapacity:nTracks];
+		for (i = 0; i < nTracks; i++) {
+			Item *item;
+			NSString *trackArtist, *albumArtist;
+			iTunesTrack *track;
+
+#define typeAtIndex(t, a, i) ((t *) [(a) objectAtIndex:(i)])
+#define stringAtIndex(a, i) typeAtIndex(NSString, a, i)
+#define numberAtIndex(a, i) typeAtIndex(NSNumber, a, i)
+#define boolAtIndex(a, i) [numberAtIndex(a, i) boolValue]
+#define integerAtIndex(a, i) [numberAtIndex(a, i) integerValue]
+#define doubleAtIndex(a, i) [numberAtIndex(a, i) doubleValue]
+			trackArtist = stringAtIndex(allArtists, i);
+			albumArtist = stringAtIndex(allAlbumArtists, i);
+			if (boolAtIndex(allCompilations, i) != NO) {
+				trackArtist = compilationArtist;
+				albumArtist = compilationArtist;
+			}
+			track = (iTunesTrack *) [tracks objectAtIndex:i];
+			item = [[Item alloc] initWithYear:integerAtIndex(allYears, i)
+				trackArtist:trackArtist
+				album:stringAtIndex(allAlbums, i)
+				albumArtist:albumArtist
+				lengthSeconds:doubleAtIndex(allDurations, i)
+				title:stringAtIndex(allNames, i)
+				trackNumber:integerAtIndex(allTrackNumbers, i)
+				discNumber:integerAtIndex(allDiscNumbers, i)
+				artworkCount:[[track artworks] count]];
+			[items addObject:item];
+			[item release];		// and release the initial reference
 		}
-		item = [[Item alloc] initWithYear:[track year]
-			trackArtist:[track artist]
-			album:[track album]
-			albumArtist:[track albumArtist]
-			lengthSeconds:[track duration]
-			title:[track name]
-			trackNumber:[track trackNumber]
-			discNumber:[track discNumber]
-			artworkCount:[[track artworks] count]];
-		[items addObject:item];
-		[item release];		// and release the initial reference
+		[self->timer end];
 	}
-	[self->timer end];
 
-	// TODO is this release correct?
-	[tracks release];
 	return items;
 }
 
