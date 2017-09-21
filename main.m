@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
 			if ([track artworkCount] != 1)
 				printf("%8lu %s\n",
 					(unsigned long) [track artworkCount],
-					[[track filename] UTF8String]);
+					[[track formattedNumberTitleArtistAlbum] UTF8String]);
 		// TODO implement proper cleanup and then goto done
 		return 0;
 	}

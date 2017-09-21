@@ -13,6 +13,7 @@
 - (NSString *)title;
 - (NSString *)albumArtist;
 - (BOOL)isCompilation;
+- (NSUInteger)discNumber;
 @end
 
 @protocol ourITLibMediaItem<NSObject>
@@ -23,6 +24,7 @@
 - (NSDate *)releaseDate;
 - (NSUInteger)year;
 - (NSURL *)location;
+- (NSUInteger)trackNumber;
 @end
 
 @protocol ourITLibrary<NSObject>
@@ -142,9 +144,9 @@
 			album:[[track album] title]
 			albumArtist:albumArtist
 			lengthMilliseconds:[track totalTime]
-			// TODO this only considers actual files
-			// TODO does -path make a copy?
-			filename:[[track location] path]
+			title:[track title]
+			trackNumber:((NSInteger) [track trackNumber])
+			discNumber:((NSInteger) [[track album] discNumber])
 			artworkCount:0];
 		[items addObject:item];
 		[item release];		// and release the initial reference

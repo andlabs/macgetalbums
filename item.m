@@ -157,9 +157,14 @@ static const struct {
 	return self->length;
 }
 
-- (NSString *)filename
+- (NSString *)formattedNumberTitleArtistAlbum
 {
-	return self->filename;
+	NSString *base;
+
+	base = [NSString stringWithFormat:@"%@ (%@, %@)", self->title, self->artist, self->album];
+	if (self->discNumber == 0)
+		return [NSString stringWithFormat:@"   %02ld %@", (long) (self->trackNumber), base];
+	return [NSString stringWithFormat:@"% 2ld-%02ld %@", (long) (self->discNumber), (long) (self->trackNumber), base];
 }
 
 - (NSUInteger)artworkCount
@@ -179,16 +184,6 @@ static const struct {
 
 	return [self->artist isEqual:b->artist] &&
 		[self->album isEqual:b->album];
-}
-
-- (NSString *)formattedNumberTitleArtistAlbum
-{
-	NSString *base;
-
-	base = [NSString stringWithFormat:@"%@ (%@, %@)", self->title, self->artist, self->album];
-	if (self->discNumber == 0)
-		return [NSString stringWithFormat:@"   %02ld %@", (long) (self->trackNumber), base];
-	return [NSString stringWithFormat:@"% 2ld-%02ld %@", (long) (self->discNumber), (long) (self->trackNumber), base];
 }
 
 @end

@@ -73,9 +73,8 @@ extern NSString *const compilationArtist;
 - (NSString *)artist;
 - (NSString *)album;
 - (Duration *)length;
-- (NSString *)filename;
-- (NSUInteger)artworkCount;
 - (NSString *)formattedNumberTitleArtistAlbum;
+- (NSUInteger)artworkCount;
 @end
 
 // scriptingbridge.m and ituneslibrary.m

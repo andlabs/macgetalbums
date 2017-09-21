@@ -81,9 +81,9 @@
 			album:[track album]
 			albumArtist:[track albumArtist]
 			lengthSeconds:[track duration]
-			// TODO -location isn't available unless I specifically ask for a fileTracks from something apparently?
-			// TODO does path make a copy?
-			filename:[((NSURL *) [[track properties] objectForKey:@"location"]) path]
+			title:[track name]
+			trackNumber:[track trackNumber]
+			discNumber:[track discNumber]
 			artworkCount:[[track artworks] count]];
 		[items addObject:item];
 		[item release];		// and release the initial reference
