@@ -150,7 +150,6 @@ int main(int argc, char *argv[])
 			if (strcmp(collectors[i], optCollector) == 0)
 				break;
 		if (collectors[i] == NULL) {
-			// TODO print with quotes somehow
 			fprintf(stderr, "error: unknown collector %s\n", optCollector);
 			usage();
 		}
@@ -238,7 +237,7 @@ int main(int argc, char *argv[])
 		goto done;
 	}
 
-	// TODO is tab safe to use?
+	// TODO is tab safe to use? provide a custom separator option
 	// TODO switch to foreach
 	// TODO change variable name from t to a or album
 	[albums enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
