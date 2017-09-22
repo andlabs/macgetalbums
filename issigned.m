@@ -15,10 +15,22 @@ BOOL checkIfSigned(NSError **err)
 
 	errcode = SecCodeCopySelf(kSecCSDefaultFlags, &me);
 	if (errcode != errSecSuccess) {
+		NSDictionary *userInfo;
+		CFStringRef errdesc = NULL;
+
+		// we're building our own error object here, and it seems NSError doesn't "know" NSOSStatusErrorDomain enough to provide strings automatically (though it might not do that at all anyway...), so we have to provide NSLocalizedDescriptionKey ourselves
+		userInfo = nil;
+		errdesc = SecCopyErrorMessageString(errcode, NULL);
+		if (errdesc != NULL) {
+			userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:(NSString *) errdesc, NSLocalizedDescriptionKey, nil];
+			CFRelease(errdesc);
+		}
 		// there isn't an explicit error domain for Code Signing errors, but SecCodeCheckValidityWithErrors() returns errors with this domain, and there doesn't seem to be any chance of conflicting values (thanks to kaytwo, milky, and mikeash in irc.freenode.net/#macdev)
 		*err = [[NSError alloc] initWithDomain:NSOSStatusErrorDomain
 			code:((NSInteger) errcode)
-			userInfo:nil];
+			userInfo:userInfo];
+		if (userInfo != nil)
+			[userInfo release];
 		return NO;
 	}
 	errcode = SecCodeCheckValidityWithErrors(me, kSecCSDefaultFlags, NULL, &cferr);
