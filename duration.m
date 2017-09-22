@@ -90,11 +90,11 @@
 	m = s / 60;
 	s = s % 60;
 	if (onlyMinutes || m < 60)
-		return [NSString stringWithFormat:@"%ju:%02ju",
+		return [[NSString alloc] initWithFormat:@"%ju:%02ju",
 			(uintmax_t) m, (uintmax_t) s];
 	h = m / 60;
 	m = m % 60;
-	return [NSString stringWithFormat:@"%ju:%02ju:%02ju",
+	return [[NSString alloc] initWithFormat:@"%ju:%02ju:%02ju",
 		(uintmax_t) h, (uintmax_t) m, (uintmax_t) s];
 }
 

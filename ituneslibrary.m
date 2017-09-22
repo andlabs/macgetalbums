@@ -72,31 +72,30 @@
 		self->framework = [[NSBundle alloc] initWithPath:frameworkPath];
 		if (self->framework == nil) {
 			*err = makeError(ErrBundleInitFailed, frameworkPath);
-			[*err autorelease];
 			goto out;
 		}
 		if ([self->framework loadAndReturnError:err] == NO) {
 			// Apple's docs are self-contradictory as to whether err is guaranteed to be non-nil here.
-			if (*err == nil) {
+			if (*err == nil)
 				*err = makeError(ErrBundleLoadFailed, frameworkPath);
-				[*err autorelease];
-			}
-			// TODO break the following convention for my cases
-			// why are we autoreleasing? NSErrors returned by Cocoa functions have to be unowned, even if they are CFErrorRef-based (thanks to mikeash in irc.freenode.net/#macdev, and possibly others too)
+			else
+				// NSErrors returned by Cocoa functions have to be unowned, even if they are CFErrorRef-based (thanks to mikeash in irc.freenode.net/#macdev, and possibly others too)
+				[*err retain];
 			goto out;
 		}
 		libraryClass = [self->framework classNamed:@"ITLibrary"];
 		if (libraryClass == nil) {
 			*err = makeError(ErrBundleClassNameFailed, @"ITLibrary", frameworkPath);
-			[*err autorelease];
 			goto out;
 		}
 		// TODO is this really collection...?
 		self->library = (id<ourITLibrary>) [libraryClass alloc];
 		self->library = [self->library initWithAPIVersion:@"1.0" error:err];
-		if (self->library == nil)
+		if (self->library == nil) {
 			// Apple's docs say that err *will* be filled.
+			[*err retain];
 			goto out;
+		}
 	out:
 		[self->timer end];
 	}

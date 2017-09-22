@@ -53,14 +53,13 @@ static mach_timebase_info_data_t timebase;
 	double d;
 	uint64_t hours, minutes;
 	NSMutableString *ret;
-	NSString *add;
+	NSString *fmt;
 
 	nsec = [self nanoseconds:t];
 	if (nsec == 0)
 		return [@"0s" copy];
 	if (nsec < 1000) {
-		NSString *fmt;
-
+		// TODO wait, PRIu64 worked before I added inttypes.h... what's going on
 		fmt = [[NSString alloc] initWithFormat:@"%%%sns", PRIu64];
 		ret = [[NSMutableString alloc] initWithFormat:fmt, nsec];
 		[fmt release];
@@ -78,29 +77,19 @@ static mach_timebase_info_data_t timebase;
 	nsec %= 3600000000000;
 	ret = [NSMutableString new];
 	if (hours != 0) {
-		NSString *fmt;
-
 		fmt = [[NSString alloc] initWithFormat:@"%%%sh", PRIu64];
-		add = [[NSString alloc] initWithFormat:fmt, hours];
+		[ret appendWithFormat:fmt, hours];
 		[fmt release];
-		[ret appendString:add];
-		[add release];
 	}
 	minutes = nsec / 60000000000;
 	nsec %= 60000000000;
 	if (minutes != 0) {
-		NSString *fmt;
-
 		fmt = [[NSString alloc] initWithFormat:@"%%%sm", PRIu64];
-		add = [[NSString alloc] initWithFormat:fmt, minutes];
+		[ret appendWithFormat:fmt, minutes];
 		[fmt release];
-		[ret appendString:add];
-		[add release];
 	}
 	d = ((double) nsec) / 1000000000;
-	add = [[NSString alloc] initWithFormat:@"%.9gs", d];
-	[ret appendString:add];
-	[add release];
+	[ret appendWithFormat:@"%.9gs", d];
 	return ret;
 }
 

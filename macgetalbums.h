@@ -10,6 +10,7 @@
 #import <math.h>
 #import <unistd.h>
 #import <stdarg.h>
+#import <inttypes.h>
 #import <mach/mach.h>
 #import <mach/mach_time.h>
 #import <objc/runtime.h>

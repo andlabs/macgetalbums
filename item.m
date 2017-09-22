@@ -160,11 +160,15 @@ static const struct {
 - (NSString *)formattedNumberTitleArtistAlbum
 {
 	NSString *base;
+	NSString *ret;
 
-	base = [NSString stringWithFormat:@"%@ (%@, %@)", self->title, self->artist, self->album];
-	if (self->discNumber == 0)
-		return [NSString stringWithFormat:@"   %02ld %@", (long) (self->trackNumber), base];
-	return [NSString stringWithFormat:@"% 2ld-%02ld %@", (long) (self->discNumber), (long) (self->trackNumber), base];
+	base = [[NSString alloc] initWithFormat:@"%@ (%@, %@)", self->title, self->artist, self->album];
+	if (self->discNumber == 0) {
+		ret = [[NSString alloc] initWithFormat:@"   %02ld %@", (long) (self->trackNumber), base];
+	else
+		ret = [[NSString alloc] initWithFormat:@"% 2ld-%02ld %@", (long) (self->discNumber), (long) (self->trackNumber), base];
+	[base release];
+	return ret;
 }
 
 - (NSUInteger)artworkCount
