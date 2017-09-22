@@ -55,7 +55,7 @@ static NSError *makeError(NSInteger errcode, const char *arg)
 	default:
 		desc = [desc initWithFormat:@"(unknown error code %ld)", (long) errcode];
 	}
-	userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:NSLocalizedDescriptionKey, desc, nil];
+	userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:desc, NSLocalizedDescriptionKey, nil];
 	[desc release];
 	err = [[NSError alloc] initWithDomain:ErrDomain
 		code:errcode
