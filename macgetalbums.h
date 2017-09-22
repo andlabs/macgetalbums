@@ -99,7 +99,10 @@ extern BOOL checkIfSigned(NSError **err);
 // errors.m
 extern NSString *const ErrDomain;
 enum {
-	ErrSigningNeeded,			// args: collector name
-	ErrCannotCollectArtwork,		// args: collector name
+	ErrBundleInitFailed,			// args: framework bundle path (NSString *)
+	ErrBundleLoadFailed,		// args: framework bundle path (NSString *)
+	ErrBundleClassNameFailed,	// args: class name (NSString *), framework bundle path (NSString *)
+	ErrSigningNeeded,			// args: collector name (const char *)
+	ErrCannotCollectArtwork,		// args: collector name (const char *)
 };
 extern NSError *makeError(NSInteger errcode, ...);

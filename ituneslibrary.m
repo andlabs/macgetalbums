@@ -28,8 +28,7 @@
 - (NSArray *)allMediaItems;		// does not return retained
 @end
 
-// NSErrors returned by Cocoa functions have to be unowned, even if they are CFErrorRef-based (thanks to mikeash in irc.freenode.net/#macdev, and possibly others too)
-#define genericError() [NSError errorWithDomain:NSMachErrorDomain code:KERN_FAILURE userInfo:nil]
+#define frameworkPath @"/Library/Frameworks/iTunesLibrary.framework"
 
 // TODO figure out how far back we can have ivars in @implementation
 @implementation iTunesLibraryCollector {
@@ -70,21 +69,26 @@
 		*err = nil;
 
 		[self->timer start:TimerLoad];
-		self->framework = [[NSBundle alloc] initWithPath:@"/Library/Frameworks/iTunesLibrary.framework"];
+		self->framework = [[NSBundle alloc] initWithPath:frameworkPath];
 		if (self->framework == nil) {
-			*err = genericError();
+			*err = makeError(ErrBundleInitFailed, frameworkPath);
+			[*err autorelease];
 			goto out;
 		}
 		if ([self->framework loadAndReturnError:err] == NO) {
 			// Apple's docs are self-contradictory as to whether err is guaranteed to be non-nil here.
-			if (*err == nil)
-				*err = genericError();
+			if (*err == nil) {
+				*err = makeError(ErrBundleLoadFailed, frameworkPath);
+				[*err autorelease];
+			}
+			// TODO break the following convention for my cases
+			// why are we autoreleasing? NSErrors returned by Cocoa functions have to be unowned, even if they are CFErrorRef-based (thanks to mikeash in irc.freenode.net/#macdev, and possibly others too)
 			goto out;
 		}
 		libraryClass = [self->framework classNamed:@"ITLibrary"];
 		if (libraryClass == nil) {
-			// TODO find a class not found error?
-			*err = genericError();
+			*err = makeError(ErrBundleClassNameFailed, @"ITLibrary", frameworkPath);
+			[*err autorelease];
 			goto out;
 		}
 		// TODO is this really collection...?

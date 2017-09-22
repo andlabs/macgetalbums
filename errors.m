@@ -7,7 +7,7 @@ NSString *const ErrDomain = @"com.andlabs.macgetalbums.ErrorDomain";
 NSError *makeError(NSInteger errcode, ...)
 {
 	va_list ap;
-	NSString *desc;
+	NSString *desc, *a1, *a2;
 	NSDictionary *userInfo;
 	id keys[2];
 	id values[2];
@@ -23,11 +23,22 @@ NSError *makeError(NSInteger errcode, ...)
 	va_start(ap, errcode);
 	desc = [NSString alloc];
 	switch (errcode) {
+	case ErrBundleInitFailed:
+		desc = [desc initWithFormat:@"initializing NSBundle at %@ failed for some unknown reason", va_arg(ap, NSString *)];
+		break;
+	case ErrBundleLoadFailed:
+		desc = [desc initWithFormat:@"loading NSBundle at %@ failed for some unknown reason", va_arg(ap, NSString *)];
+		break;
+	case ErrBundleClassNameFailed:
+		a1 = va_arg(ap, NSString *);
+		a2 = va_arg(ap, NSString *);
+		desc = [desc initWithFormat:@"loading class %@ of NSBundle at %@ failed for some unknown reason", a1, a2];
+		break;
 	case ErrSigningNeeded:
-		desc = [desc initWithFormat:@"collector %s needs signing and we aren't signed; skipping", va_arg(ap, const char *)];
+		desc = [desc initWithFormat:@"collector %s needs signing and we aren't signed", va_arg(ap, const char *)];
 		break;
 	case ErrCannotCollectArtwork:
-		desc = [desc initWithFormat:@"collector %s can't be used to get album artwork counts; skipping", va_arg(ap, const char *)];
+		desc = [desc initWithFormat:@"collector %s can't be used to get album artwork counts", va_arg(ap, const char *)];
 		break;
 	default:
 		desc = [desc initWithFormat:@"(unknown error code %ld)", (long) errcode];
