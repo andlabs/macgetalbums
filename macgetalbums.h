@@ -50,7 +50,7 @@ enum {
 - (void)addMilliseconds:(NSUInteger)val;
 - (void)addSeconds:(double)val;
 - (NSUInteger)milliseconds;
-// you do NOT own the returned string TODO just stop all this
+// you own the returned string
 - (NSString *)stringWithOnlyMinutes:(BOOL)onlyMinutes;
 @end
 
@@ -74,6 +74,7 @@ extern NSString *const compilationArtist;
 - (NSString *)artist;
 - (NSString *)album;
 - (Duration *)length;
+// you own the returned string
 - (NSString *)formattedNumberTitleArtistAlbum;
 - (NSUInteger)artworkCount;
 @end
@@ -85,9 +86,9 @@ extern NSString *const compilationArtist;
 + (NSString *)collectorDescription;
 + (BOOL)needsSigning;
 + (BOOL)canGetArtworkCount;
-// err is not owned by you on return
+// you own the returned error
 - (id)initWithTimer:(Timer *)t error:(NSError **)err;
-// the returned array IS owned by you
+// you own the returned array
 - (NSArray *)collectTracks;
 @end
 @interface ScriptingBridgeCollector : NSObject<Collector>
