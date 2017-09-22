@@ -30,40 +30,6 @@ static const char *collectors[] = {
 
 #define GETCLASS(c) objc_getRequiredClass(c)
 
-// TODO use this everywhere
-static NSString *const ErrDomain = @"com.andlabs.macgetalbums.ErrorDomain";
-enum {
-	ErrSigningNeeded,			// arg is collector name
-	ErrCannotCollectArtwork,		// arg is collector name
-};
-
-// you own the NSError here
-static NSError *makeError(NSInteger errcode, const char *arg)
-{
-	NSString *desc;
-	NSDictionary *userInfo;
-	NSError *err;
-
-	desc = [NSString alloc];
-	switch (errcode) {
-	case ErrSigningNeeded:
-		desc = [desc initWithFormat:@"collector %s needs signing and we aren't signed; skipping", arg];
-		break;
-	case ErrCannotCollectArtwork:
-		desc = [desc initWithFormat:@"collector %s can't be used to get album artwork counts; skipping", arg];
-		break;
-	default:
-		desc = [desc initWithFormat:@"(unknown error code %ld)", (long) errcode];
-	}
-	userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:desc, NSLocalizedDescriptionKey, nil];
-	[desc release];
-	err = [[NSError alloc] initWithDomain:ErrDomain
-		code:errcode
-		userInfo:userInfo];
-	[userInfo release];
-	return err;
-}
-
 // you own the NSError here
 static id<Collector> tryCollector(const char *class, BOOL forAlbumArtwork, Timer *timer, NSError **err)
 {

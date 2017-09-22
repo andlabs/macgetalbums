@@ -4,6 +4,7 @@ OUT = macgetalbums
 
 MFILES = \
 	duration.m \
+	errors.m \
 	issigned.m \
 	item.m \
 	ituneslibrary.m \

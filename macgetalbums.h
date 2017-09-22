@@ -95,3 +95,11 @@ extern NSString *const compilationArtist;
 
 // issigned.m
 extern BOOL checkIfSigned(NSError **err);
+
+// errors.m
+extern NSString *const ErrDomain;
+enum {
+	ErrSigningNeeded,			// args: collector name
+	ErrCannotCollectArtwork,		// args: collector name
+};
+extern NSError *makeError(NSInteger errcode, ...);
