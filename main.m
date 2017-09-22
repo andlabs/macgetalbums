@@ -28,32 +28,64 @@ static const char *collectors[] = {
 	NULL,
 };
 
-// TODO use objc_getRequiredClass() instead?
-#define GETCLASS(c) objc_getClass(c)
+#define GETCLASS(c) objc_getRequiredClass(c)
 
-static id<Collector> tryCollector(const char *class, Timer *timer, NSError **err)
+// TODO use this everywhere
+static NSString *const ErrDomain = @"com.andlabs.macgetalbums.ErrorDomain";
+enum {
+	ErrSigningNeeded,			// arg is collector name
+	ErrCannotCollectArtwork,		// arg is collector name
+};
+
+// you own the NSError here
+static NSError *makeError(NSInteger errcode, const char *arg)
+{
+	NSString *desc;
+	NSDictionary *userInfo;
+	NSError *err;
+
+	desc = [NSString alloc];
+	switch (errcode) {
+	case ErrSigningNeeded:
+		desc = [desc initWithFormat:@"collector %s needs signing and we aren't signed; skipping", arg];
+		break;
+	case ErrCannotCollectArtwork:
+		desc = [desc initWithFormat:@"collector %s can't be used to get album artwork counts; skipping", arg];
+		break;
+	default:
+		desc = [desc initWithFormat:@"(unknown error code %ld)", (long) errcode];
+	}
+	userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:NSLocalizedDescriptionKey, desc, nil];
+	[desc release];
+	err = [[NSError alloc] initWithDomain:ErrDomain
+		code:errcode
+		userInfo:userInfo];
+	[userInfo release];
+	return err;
+}
+
+// you own the NSError here
+static id<Collector> tryCollector(const char *class, BOOL forAlbumArtwork, Timer *timer, NSError **err)
 {
 	id<Collector> collector;
 	Class<Collector> collectorClass;
 
 	collectorClass = GETCLASS(class);
-	xlog(@"trying collector %s", class);
-
 	if (!isSigned && [collectorClass needsSigning]) {
-		xlog(@"collector %s needs signing and we aren't signed; skipping", class);
+		*err = makeError(ErrSigningNeeded, class);
+		return nil;
+	}
+	if (forAlbumArtwork && ![collectorClass canGetArtworkCount]) {
+		*err = makeError(ErrCannotCollectArtwork, class);
 		return nil;
 	}
 
 	collector = [[collectorClass alloc] initWithTimer:timer error:err];
 	if (*err != nil) {
-		xlog(@"error loading collector %s: %@; skipping",
-			class, err);
-		// TODO release err?
+		[*err retain];
 		[collector release];
 		return nil;
 	}
-	xlog(@"time to load iTunes library: %s",
-		[[timer stringFor:TimerLoad] UTF8String]);
 	return collector;
 }
 
@@ -148,7 +180,6 @@ int main(int argc, char *argv[])
 
 	// TODO this and tryCollector() need massive cleanup
 	if (optCollector != NULL) {
-		collector = nil;
 		for (i = 0; collectors[i] != NULL; i++)
 			if (strcmp(collectors[i], optCollector) == 0)
 				break;
@@ -158,41 +189,37 @@ int main(int argc, char *argv[])
 			usage();
 		}
 		err = nil;
-		collector = tryCollector(optCollector, timer, &err);
-		if (collector == nil) {
-			// TODO
-			fprintf(stderr, "error: collector %s cannot be used\n", optCollector);
-			return 1;
-		}
+		collector = tryCollector(optCollector, optArtwork, timer, &err);
 		if (err != nil) {
-			fprintf(stderr, "error trying collector %s: %s\n",
-				optCollector,
-				[[err description] UTF8String]);
-			return 1;
-		}
-		if (optArtwork && ![[collector class] canGetArtworkCount]) {
-			fprintf(stderr, "error: collector %s can't be used to collect duplicate album artwork info; sorry\n", optCollector);
+			@autoreleasepool {
+				fprintf(stderr, "error trying collector %s: %s\n",
+					optCollector,
+					[[err description] UTF8String]);
+				[err release];
+			}
 			return 1;
 		}
 	} else {
 		collector = nil;
 		for (i = 0; collectors[i] != NULL; i++) {
+			xlog(@"trying collector %s", collectors[i]);
 			err = nil;
-			collector = tryCollector(collectors[i], timer, &err);
-			if (collector != nil) {
-				if (optArtwork && ![[collector class] canGetArtworkCount]) {
-					xlog(@"can't use collector %s to collect artwork conts; skipping", collectors[i]);
-					[collector release];
-					continue;
-				}
-				break;
+			collector = tryCollector(collectors[i], optArtwork, timer, &err);
+			if (err != nil) {
+				xlog(@"error trying collector %s: %@; skipping\n",
+					collectors[i], err);
+				[err release];
+				continue;
 			}
+			break;
 		}
 		if (collector == nil) {
 			fprintf(stderr, "error: no iTunes collector could be used; cannot continue\n");
 			return 1;
 		}
 	}
+	xlog(@"time to load iTunes library: %s",
+		[[timer stringFor:TimerLoad] UTF8String]);
 
 	tracks = [collector collectTracks];
 	xlog(@"time to collect tracks: %s",
