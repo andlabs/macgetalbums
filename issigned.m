@@ -19,6 +19,7 @@ BOOL checkIfSigned(NSError **err)
 		CFStringRef errdesc = NULL;
 
 		// we're building our own error object here, and it seems NSError doesn't "know" NSOSStatusErrorDomain enough to provide strings automatically (though it might not do that at all anyway...), so we have to provide NSLocalizedDescriptionKey ourselves
+		// TODO does this work? need a way to test
 		userInfo = nil;
 		errdesc = SecCopyErrorMessageString(errcode, NULL);
 		if (errdesc != NULL) {
@@ -47,6 +48,7 @@ BOOL checkIfSigned(NSError **err)
 		return NO;
 	}
 	// documentation says this won't be nil in this case
+	// TODO does it not have a localized description?
 	*err = (NSError *) cferr;
 	return NO;
 }
