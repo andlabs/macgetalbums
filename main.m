@@ -48,7 +48,6 @@ static id<Collector> tryCollector(const char *class, BOOL forAlbumArtwork, Timer
 
 	collector = [[collectorClass alloc] initWithTimer:timer error:err];
 	if (*err != nil) {
-		[*err retain];
 		[collector release];
 		return nil;
 	}
@@ -163,7 +162,6 @@ int main(int argc, char *argv[])
 		if (err != nil) {
 			xlog(@"signed-code checking failed: %@; assuming not signed", err);
 			[err release];
-			err = nil;
 		} else
 			xlog(@"we are not signed");
 	else
