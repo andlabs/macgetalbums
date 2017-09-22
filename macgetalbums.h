@@ -34,6 +34,7 @@ enum {
 - (void)start:(int)t;
 - (void)end;
 - (uint64_t)nanoseconds:(int)t;
+// you own the returned string
 - (NSString *)stringFor:(int)t;
 @end
 
@@ -49,6 +50,7 @@ enum {
 - (void)addMilliseconds:(NSUInteger)val;
 - (void)addSeconds:(double)val;
 - (NSUInteger)milliseconds;
+// you do NOT own the returned string TODO just stop all this
 - (NSString *)stringWithOnlyMinutes:(BOOL)onlyMinutes;
 @end
 

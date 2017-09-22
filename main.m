@@ -55,7 +55,33 @@ static id<Collector> tryCollector(const char *class, BOOL forAlbumArtwork, Timer
 	return collector;
 }
 
-NSMutableSet *albums = nil;
+// you own the returned NSSet
+static NSSet *sortIntoAlbums(NSArray *tracks, Timer *timer, Duration **totalDuration)
+{
+	NSMutableSet *albums;
+
+	albums = [[NSMutableSet alloc] initWithCapacity:[tracks count]];
+	*totalDuration = [[Duration alloc] initWithMilliseconds:0];
+	[timer start:TimerSort];
+	for (Item *track in tracks) {
+		Item *existing;
+
+		// We don't reuse track items for album items.
+		// Instead we copy the first track in an album and then
+		// combine the other tracks with that copy.
+		existing = (Item *) [albums member:track];
+		if (existing != nil)
+			[existing combineWith:track];
+		else {
+			existing = [track copy];
+			[albums addObject:existing];
+			[existing release];		// and release our initial reference
+		}
+		[*totalDuration add:[track length]];
+	}
+	[timer end];
+	return albums;
+}
 
 const char *argv0;
 
@@ -89,6 +115,7 @@ int main(int argc, char *argv[])
 	id<Collector> collector;
 	NSArray *tracks;
 	NSUInteger trackCount;
+	NSSet *albums;
 	Timer *timer;
 	Duration *totalDuration;
 	NSError *err;
@@ -192,42 +219,22 @@ int main(int argc, char *argv[])
 	xlog(@"time to convert tracks to our internal data structure format: %s",
 		[[timer stringFor:TimerConvert] UTF8String]);
 
+	albums = nil;
+	totalDuration = nil;
+
 	if (optArtwork) {
 		for (Item *track in tracks)
 			if ([track artworkCount] != 1)
 				printf("%8lu %s\n",
 					(unsigned long) [track artworkCount],
 					[[track formattedNumberTitleArtistAlbum] UTF8String]);
-		// TODO implement proper cleanup and then goto done
-		return 0;
+		goto done;
 	}
 
-	albums = [NSMutableSet new];
-	totalDuration = [[Duration alloc] initWithMilliseconds:0];
-	[timer start:TimerSort];
 	trackCount = [tracks count];
-	for (Item *track in tracks) {
-		Item *existing;
-
-		// We don't reuse track items for album items.
-		// Instead we copy the first track in an album and then
-		// combine the other tracks with that copy.
-		existing = (Item *) [albums member:track];
-		if (existing != nil)
-			[existing combineWith:track];
-		else {
-			existing = [track copy];
-			[albums addObject:existing];
-			[existing release];		// and release our initial reference
-		}
-		[totalDuration add:[track length]];
-	}
-	[timer end];
+	albums = sortIntoAlbums(tracks, timer, &totalDuration);
 	xlog(@"time to process tracks: %s",
 		[[timer stringFor:TimerSort] UTF8String]);
-	[tracks release];
-	[collector release];
-	[timer release];
 
 	if (optShowCount) {
 		printf("%lu tracks %lu albums %s total time\n",
@@ -254,6 +261,12 @@ int main(int argc, char *argv[])
 	}];
 
 done:
-	// TODO clean up
+	if (totalDuration != nil)
+		[totalDuration release];
+	if (albums != nil)
+		[albums release];
+	[tracks release];
+	[collector release];
+	[timer release];
 	return 0;
 }
