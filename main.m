@@ -64,13 +64,46 @@ static void xlogtimer(NSString *msg, Timer *timer, int which)
 	[ts release];
 }
 
-static const char *collectors[] = {
-	"iTunesLibraryCollector",
-	"ScriptingBridgeCollector",
-	NULL,
-};
+static NSArray *defaultCollectorsArray()
+{
+	NSArray *arr;
 
-#define GETCLASS(c) objc_getRequiredClass(c)
+	arr = [NSArray alloc];
+	return [arr initWithObjects:@"iTunesLibraryCollector",
+		@"ScriptingBridgeCollector",
+		nil];
+}
+
+static NSArray *singleCollectorArray(const char *what)
+{
+	NSString *s;
+	NSArray *arr;
+
+	s = [[NSString alloc] initWithUTF8String:what];
+	arr = [[NSArray alloc] initWithObject:s];
+	[s release];
+	return arr;
+}
+
+typedef BOOL (*foreachCollectorFunc)(NSString *name, Class<Collector> class, id data);
+
+static void foreachCollector(NSArray *collectors, foreachCollectorFunc f, id data)
+{
+	Class<Collector> class;
+	BOOL cont;
+
+	for (NSString *c in collectors) {
+		class = NSClassFromString(c);
+		cont = (*f)(c, class, data);
+		if (!cont)
+			break;
+	}
+}
+
+@interface tryCollectorParams : NSObject {
+@public
+	BOOL isSigned;
+	BOOL forAlbumArtwork;
 
 // you own the NSError here
 static id<Collector> tryCollector(const char *class, BOOL forAlbumArtwork, Timer *timer, NSError **err)
