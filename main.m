@@ -22,6 +22,15 @@ static void xlog(NSString *fmt, ...)
 	va_end(ap);
 }
 
+static void xlogtimer(NSString *msg, Timer *timer, int which)
+{
+	NSString *ts;
+
+	ts = [timer stringFor:which];
+	xlog(@"time to %@: %@", msg, ts);
+	[ts release];
+}
+
 static const char *collectors[] = {
 	"iTunesLibraryCollector",
 	"ScriptingBridgeCollector",
@@ -208,14 +217,11 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 	}
-	xlog(@"time to load iTunes library: %s",
-		[[timer stringFor:TimerLoad] UTF8String]);
+	xlogtimer(@"load iTunes library", timer, TimerLoad);
 
 	tracks = [collector collectTracks];
-	xlog(@"time to collect tracks: %s",
-		[[timer stringFor:TimerCollect] UTF8String]);
-	xlog(@"time to convert tracks to our internal data structure format: %s",
-		[[timer stringFor:TimerConvert] UTF8String]);
+	xlogtimer(@"collect tracks", timer, TimerCollect);
+	xlogtimer(@"convert tracks to our internal data structure format", timer, TimerConvert);
 
 	albums = nil;
 	totalDuration = nil;
@@ -231,8 +237,7 @@ int main(int argc, char *argv[])
 
 	trackCount = [tracks count];
 	albums = sortIntoAlbums(tracks, timer, &totalDuration);
-	xlog(@"time to process tracks: %s",
-		[[timer stringFor:TimerSort] UTF8String]);
+	xlogtimer(@"process tracks", timer, TimerSort);
 
 	if (optShowCount) {
 		printf("%lu tracks %lu albums %s total time\n",
