@@ -78,18 +78,18 @@ static mach_timebase_info_data_t timebase;
 	ret = [NSMutableString new];
 	if (hours != 0) {
 		fmt = [[NSString alloc] initWithFormat:@"%%%sh", PRIu64];
-		[ret appendWithFormat:fmt, hours];
+		[ret appendFormat:fmt, hours];
 		[fmt release];
 	}
 	minutes = nsec / 60000000000;
 	nsec %= 60000000000;
 	if (minutes != 0) {
 		fmt = [[NSString alloc] initWithFormat:@"%%%sm", PRIu64];
-		[ret appendWithFormat:fmt, minutes];
+		[ret appendFormat:fmt, minutes];
 		[fmt release];
 	}
 	d = ((double) nsec) / 1000000000;
-	[ret appendWithFormat:@"%.9gs", d];
+	[ret appendFormat:@"%.9gs", d];
 	return ret;
 }
 

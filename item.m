@@ -163,7 +163,7 @@ static const struct {
 	NSString *ret;
 
 	base = [[NSString alloc] initWithFormat:@"%@ (%@, %@)", self->title, self->artist, self->album];
-	if (self->discNumber == 0) {
+	if (self->discNumber == 0)
 		ret = [[NSString alloc] initWithFormat:@"   %02ld %@", (long) (self->trackNumber), base];
 	else
 		ret = [[NSString alloc] initWithFormat:@"% 2ld-%02ld %@", (long) (self->discNumber), (long) (self->trackNumber), base];
