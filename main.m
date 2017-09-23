@@ -12,17 +12,48 @@ static BOOL optArtwork = NO;
 // TODO make sure this isn't global
 static BOOL isSigned = NO;
 
+static void xvfprintf(FILE *f, NSString *fmt, va_list ap)
+{
+	NSString *s;
+
+	s = [[NSString alloc] initWithFormat:fmt arguments:ap];
+	fprintf(f, "%s", [s UTF8String]);
+	[s release];
+}
+
+static void xfprintf(FILE *f, NSString *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	xvfprintf(f, fmt, ap);
+	va_end(ap);
+}
+
+static void xprintf(NSString *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	xvfprintf(stdout, fmt, ap);
+	va_end(ap);
+}
+
+static void xlogv(NSString *fmt, va_list ap)
+{
+	if (!optVerbose)
+		return;
+	NSLogv(fmt, ap);
+}
+
 static void xlog(NSString *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	if (optVerbose)
-		NSLogv(fmt, ap);
+	xlogv(fmt, ap);
 	va_end(ap);
 }
-
-// potential TODO: have a xprintf() and xfprintf() too
 
 static void xlogtimer(NSString *msg, Timer *timer, int which)
 {
