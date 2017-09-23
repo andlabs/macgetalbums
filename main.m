@@ -22,6 +22,8 @@ static void xlog(NSString *fmt, ...)
 	va_end(ap);
 }
 
+// potential TODO: have a xprintf() and xfprintf() too
+
 static void xlogtimer(NSString *msg, Timer *timer, int which)
 {
 	NSString *ts;
@@ -89,6 +91,20 @@ static NSSet *sortIntoAlbums(NSArray *tracks, Timer *timer, Duration **totalDura
 	}
 	[timer end];
 	return albums;
+}
+
+static void showArtworkCounts(NSArray *tracks)
+{
+	for (Item *track in tracks)
+		if ([track artworkCount] != 1) {
+			NSString *f;
+
+			f = [track formattedNumberTitleArtistAlbum];
+			printf("%8lu %s\n",
+				(unsigned long) [track artworkCount],
+				[f UTF8String]);
+			[f release];
+		}
 }
 
 const char *argv0;
@@ -178,7 +194,7 @@ int main(int argc, char *argv[])
 
 	timer = [Timer new];
 
-	// TODO this and tryCollector() need massive cleanup
+	// TODO this needs massive cleanup
 	if (optCollector != NULL) {
 		for (i = 0; collectors[i] != NULL; i++)
 			if (strcmp(collectors[i], optCollector) == 0)
@@ -227,11 +243,7 @@ int main(int argc, char *argv[])
 	totalDuration = nil;
 
 	if (optArtwork) {
-		for (Item *track in tracks)
-			if ([track artworkCount] != 1)
-				printf("%8lu %s\n",
-					(unsigned long) [track artworkCount],
-					[[track formattedNumberTitleArtistAlbum] UTF8String]);
+		showArtworkCounts(tracks);
 		goto done;
 	}
 
@@ -240,28 +252,32 @@ int main(int argc, char *argv[])
 	xlogtimer(@"process tracks", timer, TimerSort);
 
 	if (optShowCount) {
+		NSString *totalstr;
+
+		totalstr = [totalDuration stringWithOnlyMinutes:optMinutes];
 		printf("%lu tracks %lu albums %s total time\n",
 			(unsigned long) trackCount,
 			(unsigned long) [albums count],
-			[[totalDuration stringWithOnlyMinutes:optMinutes] UTF8String]);
+			[totalstr UTF8String]);
+		[totalstr release];
 		goto done;
 	}
 
-	// TODO is tab safe to use? provide a custom separator option
-	// TODO switch to foreach
-	// TODO change variable name from t to a or album
-	[albums enumerateObjectsUsingBlock:^(id obj, BOOL *stop) {
-		Item *t = (Item *) obj;
-
+	// TODO provide a custom separator option
+	for (Item *a in albums) {
 		printf("%ld\t%s\t%s",
-			(long) ([t year]),
-			[[t artist] UTF8String],
-			[[t album] UTF8String]);
-		if (optShowLengths)
-			printf("\t%s",
-				[[[t length] stringWithOnlyMinutes:optMinutes] UTF8String]);
+			(long) ([a year]),
+			[[a artist] UTF8String],
+			[[a album] UTF8String]);
+		if (optShowLengths) {
+			NSString *lengthstr;
+
+			lengthstr = [[a length] stringWithOnlyMinutes:optMinutes];
+			printf("\t%s", [lengthstr UTF8String]);
+			[lengthstr release];
+		}
 		printf("\n");
-	}];
+	}
 
 done:
 	if (totalDuration != nil)
