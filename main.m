@@ -131,9 +131,9 @@ static void showArtworkCounts(NSArray *tracks)
 			NSString *f;
 
 			f = [track formattedNumberTitleArtistAlbum];
-			printf("%8lu %s\n",
+			xprintf(@"%8lu %@\n",
 				(unsigned long) [track artworkCount],
-				[f UTF8String]);
+				f);
 			[f release];
 		}
 }
@@ -158,9 +158,9 @@ void usage(void)
 		Class<Collector> class;
 
 		class = GETCLASS(collectors[i]);
-		fprintf(stderr, " %s\n  %s\n",
+		xfprintf(stderr, @" %s\n  %@\n",
 			collectors[i],
-			[[class collectorDescription] UTF8String]);
+			[class collectorDescription]);
 	}
 	exit(1);
 }
@@ -237,12 +237,9 @@ int main(int argc, char *argv[])
 		err = nil;
 		collector = tryCollector(optCollector, optArtwork, timer, &err);
 		if (err != nil) {
-			@autoreleasepool {
-				fprintf(stderr, "error trying collector %s: %s\n",
-					optCollector,
-					[[err description] UTF8String]);
-				[err release];
-			}
+			xfprintf(stderr, @"error trying collector %s: %s\n",
+				optCollector, err);
+			[err release];
 			return 1;
 		}
 	} else {
@@ -286,25 +283,25 @@ int main(int argc, char *argv[])
 		NSString *totalstr;
 
 		totalstr = [totalDuration stringWithOnlyMinutes:optMinutes];
-		printf("%lu tracks %lu albums %s total time\n",
+		xprintf(@"%lu tracks %lu albums %@ total time\n",
 			(unsigned long) trackCount,
 			(unsigned long) [albums count],
-			[totalstr UTF8String]);
+			totalstr);
 		[totalstr release];
 		goto done;
 	}
 
 	// TODO provide a custom separator option
 	for (Item *a in albums) {
-		printf("%ld\t%s\t%s",
+		xprintf(@"%ld\t%@\t%@",
 			(long) ([a year]),
-			[[a artist] UTF8String],
-			[[a album] UTF8String]);
+			[a artist],
+			[a album]);
 		if (optShowLengths) {
 			NSString *lengthstr;
 
 			lengthstr = [[a length] stringWithOnlyMinutes:optMinutes];
-			printf("\t%s", [lengthstr UTF8String]);
+			xprintf(@"\t%@", lengthstr);
 			[lengthstr release];
 		}
 		printf("\n");
