@@ -3,12 +3,14 @@
 OUT = macgetalbums
 
 MFILES = \
+	collector.m \
 	duration.m \
 	errors.m \
 	issigned.m \
 	item.m \
 	ituneslibrary.m \
 	main.m \
+	printlog.m \
 	scriptingbridge.m \
 	timer.m
 

@@ -80,7 +80,7 @@ extern NSString *const compilationArtist;
 - (NSUInteger)artworkCount;
 @end
 
-// scriptingbridge.m and ituneslibrary.m
+// collector.m
 @protocol Collector<NSObject>
 // apparently this isn't in the NSObject protocol, but we need it
 + (instancetype)alloc;
@@ -92,13 +92,31 @@ extern NSString *const compilationArtist;
 // you own the returned array
 - (NSArray *)collectTracks;
 @end
+extern NSArray *defaultCollectorsArray(void);
+extern NSArray *singleCollectorArray(const char *what);
+typedef BOOL (*foreachCollectorFunc)(NSString *name, Class<Collector> class, void *data);
+extern void foreachCollector(NSArray *collectors, foreachCollectorFunc f, void *data);
+
+// scriptingbridge.m
 @interface ScriptingBridgeCollector : NSObject<Collector>
 @end
+
+// ituneslibrarycontroller.m
 @interface iTunesLibraryCollector : NSObject<Collector>
 @end
 
 // issigned.m
 extern BOOL checkIfSigned(NSError **err);
+
+// printlog.m
+extern void xvfprintf(FILE *f, NSString *fmt, va_list ap);
+extern void xfprintf(FILE *f, NSString *fmt, ...);
+extern void xprintf(NSString *fmt, ...);
+extern void xstderrprintf(NSString *fmt, ...);
+extern BOOL suppressLogs;
+extern void xlogv(NSString *fmt, va_list ap);
+extern void xlog(NSString *fmt, ...);
+extern void xlogtimer(NSString *msg, Timer *timer, int which);
 
 // errors.m
 extern NSString *const ErrDomain;
