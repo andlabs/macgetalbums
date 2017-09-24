@@ -42,7 +42,7 @@ struct tryCollectorsParams {
 	id<Collector> collector;
 };
 
-static BOOL tryCollectors(NSString *name, Class<Collector> class, void *data)
+static BOOL tryCollectorsForEach(NSString *name, Class<Collector> class, void *data)
 {
 	struct tryCollectorsParams *p = (struct tryCollectorsParams *) data;
 	NSString *skipping;
@@ -66,6 +66,45 @@ static BOOL tryCollectors(NSString *name, Class<Collector> class, void *data)
 		return NO;
 	}
 	return YES;
+}
+
+static id<Collector> tryCollectors(BOOL isSigned, Timer *timer, BOOL *showUsage)
+{
+	struct tryCollectorsParams p;
+	NSArray *collectors;
+
+	*showUsage = NO;
+	memset(&p, 0, sizeof (struct tryCollectorsParams));
+	if (optCollector != NULL) {
+		// we're trying one collector
+		// we want errors to go straight to stderr
+		// we also don't need preliminary log messages
+		p.tryingMultiple = NO;
+		p.log = xstderrprintf;
+		collectors = singleCollectorArray(optCollector);
+		if (collectors == nil) {
+			fprintf(stderr, "error: unknown collector %s\n", optCollector);
+			*showUsage = YES;
+			return nil;
+		}
+	} else {
+		p.tryingMultiple = YES;
+		p.log = xlog;
+		collectors = defaultCollectorsArray();
+	}
+	p.isSigned = isSigned;
+	p.forAlbumArtwork = optArtwork;
+	p.timer = timer;
+	foreachCollector(collectors, tryCollectorsForEach, &p);
+	[collectors release];
+	if (p.collector == nil) {
+		// when trying only one collector, tryCollectorsForEach() already prints an error message
+		// when trying multiple, there's no error message, so print one now
+		if (p.tryingMultiple)
+			fprintf(stderr, "error: no iTunes collector could be used; cannot continue\n");
+		return nil;
+	}
+	return p.collector;
 }
 
 // you own the returned NSSet
@@ -141,8 +180,7 @@ void usage(void)
 
 int main(int argc, char *argv[])
 {
-	struct tryCollectorsParams p;
-	NSArray *collectors;
+	BOOL showUsage;
 	id<Collector> collector;
 	NSArray *tracks;
 	NSUInteger trackCount;
@@ -201,34 +239,11 @@ int main(int argc, char *argv[])
 
 	timer = [Timer new];
 
-	memset(&p, 0, sizeof (struct tryCollectorsParams));
-	if (optCollector != NULL) {
-		// we're trying one collector
-		// we want errors to go straight to stderr
-		// we also don't need preliminary log messages
-		p.tryingMultiple = NO;
-		p.log = xstderrprintf;
-		collectors = singleCollectorArray(optCollector);
-		if (collectors == nil) {
-			fprintf(stderr, "error: unknown collector %s\n", optCollector);
-			usage();
-		}
-	} else {
-		p.tryingMultiple = YES;
-		p.log = xlog;
-		collectors = defaultCollectorsArray();
-	}
-	p.isSigned = isSigned;
-	p.forAlbumArtwork = optArtwork;
-	p.timer = timer;
-	foreachCollector(collectors, tryCollectors, &p);
-	[collectors release];
-	collector = p.collector;
+	collector = tryCollectors(isSigned, timer, &showUsage);
 	if (collector == nil) {
-		// when trying only one collector, tryCollectors() already prints an error message
-		// when trying multiple, there's no error message, so print one now
-		if (p.tryingMultiple)
-			fprintf(stderr, "error: no iTunes collector could be used; cannot continue\n");
+		if (showUsage)
+			usage();
+		// tryCollectors() already printed error messages; we just need to quit now
 		return 1;
 	}
 	xlogtimer(@"load iTunes library", timer, TimerLoad);
