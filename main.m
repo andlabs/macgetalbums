@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
 	Timer *timer;
 	Duration *totalDuration;
 	NSError *err;
-	int i, c;
+	int c;
 
 	argv0 = argv[0];
 	while ((c = getopt(argc, argv, ":achlmu:v")) != -1)
