@@ -49,13 +49,13 @@ static BOOL tryCollectors(NSString *name, Class<Collector> class, void *data)
 	NSError *err;
 
 	if (p->tryingMultiple)
-		(*(p->log))(@"trying collector %s", collectors[i]);
+		(*(p->log))(@"trying collector %@", name);
 
 	err = nil;
 	p->collector = tryCollector(name, class,
 		p->isSigned, p->forAlbumArtwork,
 		p->timer, &err);
-	if (p->err != nil) {
+	if (err != nil) {
 		skipping = @"";
 		if (p->tryingMultiple)
 			skipping = @"; skipping";
@@ -200,30 +200,18 @@ int main(int argc, char *argv[])
 
 	timer = [Timer new];
 
-	memset(&p, 0, sizeof (tryCollectorsParams));
+	memset(&p, 0, sizeof (struct tryCollectorsParams));
 	if (optCollector != NULL) {
-		NSString *cs;
-
 		// we're trying one collector
 		// we want errors to go straight to stderr
 		// we also don't need preliminary log messages
 		p.tryingMultiple = NO;
 		p.log = xstderrprintf;
-
-		// move this to a separate function
-		cs = [[NSString alloc] initWithUTF8String:optCollector];
-		collectors = defaultCollectorsArray();
-		for (i = 0; i < [collectors count]; i++)
-			if ([cs isEqual:[collectors objectAtIndex:i]])
-				break;
-		[cs release];
-		if (i >= [collectors count]) {
-			[collectors release];
+		collectors = singleCollectorArray(optCollector);
+		if (collectors == nil) {
 			fprintf(stderr, "error: unknown collector %s\n", optCollector);
 			usage();
 		}
-		[collectors release];
-		collectors = singleCollectorArray(optCollector);
 	} else {
 		p.tryingMultiple = YES;
 		p.log = xlog;
