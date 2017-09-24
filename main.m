@@ -39,6 +39,15 @@ static void xprintf(NSString *fmt, ...)
 	va_end(ap);
 }
 
+static void xstderrprintf(NSString *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	xvfprintf(stdout, fmt, ap);
+	va_end(ap);
+}
+
 static void xlogv(NSString *fmt, va_list ap)
 {
 	if (!optVerbose)
@@ -85,48 +94,74 @@ static NSArray *singleCollectorArray(const char *what)
 	return arr;
 }
 
-typedef BOOL (*foreachCollectorFunc)(NSString *name, Class<Collector> class, id data);
+typedef BOOL (*foreachCollectorFunc)(NSString *name, Class<Collector> class, void *data);
 
-static void foreachCollector(NSArray *collectors, foreachCollectorFunc f, id data)
+static void foreachCollector(NSArray *collectors, foreachCollectorFunc f, void *data)
 {
 	Class<Collector> class;
-	BOOL cont;
+	BOOL stop;
 
 	for (NSString *c in collectors) {
 		class = NSClassFromString(c);
-		cont = (*f)(c, class, data);
-		if (!cont)
+		stop = (*f)(c, class, data);
+		if (stop)
 			break;
 	}
 }
 
-@interface tryCollectorParams : NSObject {
-@public
-	BOOL isSigned;
-	BOOL forAlbumArtwork;
-
-// you own the NSError here
-static id<Collector> tryCollector(const char *class, BOOL forAlbumArtwork, Timer *timer, NSError **err)
+static id<Collector> tryCollector(NSString *name, Class<Collector> class, BOOL isSigned, BOOL forAlbumArtwork, Timer *timer, NSError **err)
 {
 	id<Collector> collector;
-	Class<Collector> collectorClass;
 
-	collectorClass = GETCLASS(class);
-	if (!isSigned && [collectorClass needsSigning]) {
-		*err = makeError(ErrSigningNeeded, class);
+	if (!isSigned && [class needsSigning]) {
+		*err = makeError(ErrSigningNeeded, name);
 		return nil;
 	}
-	if (forAlbumArtwork && ![collectorClass canGetArtworkCount]) {
-		*err = makeError(ErrCannotCollectArtwork, class);
+	if (forAlbumArtwork && ![class canGetArtworkCount]) {
+		*err = makeError(ErrCannotCollectArtwork, name);
 		return nil;
 	}
 
-	collector = [[collectorClass alloc] initWithTimer:timer error:err];
+	collector = [[class alloc] initWithTimer:timer error:err];
 	if (*err != nil) {
 		[collector release];
 		return nil;
 	}
 	return collector;
+}
+
+struct tryCollectorsParams {
+	BOOL tryingMultiple;
+	void (*log)(NSString *, ...);
+	BOOL isSigned;
+	BOOL forAlbumArtwork;
+	Timer *timer;
+	id<Collector> collector;
+};
+
+static BOOL tryCollectors(NSString *name, Class<Collector> class, void *data)
+{
+	struct tryCollectorsParams *p = (struct tryCollectorsParams *) data;
+	NSString *skipping;
+	NSError *err;
+
+	if (p->tryingMultiple)
+		(*(p->log))(@"trying collector %s", collectors[i]);
+
+	err = nil;
+	p->collector = tryCollector(name, class,
+		p->isSigned, p->forAlbumArtwork,
+		p->timer, &err);
+	if (p->err != nil) {
+		skipping = @"";
+		if (p->tryingMultiple)
+			skipping = @"; skipping";
+		(*(p->log))(@"error trying collector %@: %@%@\n",
+			name, err, skipping);
+		[err release];
+		return NO;
+	}
+	return YES;
 }
 
 // you own the returned NSSet
@@ -173,9 +208,16 @@ static void showArtworkCounts(NSArray *tracks)
 
 const char *argv0;
 
+static BOOL usagePrintCollectors(NSString *name, Class<Collector> class, void *data)
+{
+	xfprintf(stderr, @" %@\n  %@\n",
+		name, [class collectorDescription]);
+	return NO;
+}
+
 void usage(void)
 {
-	int i;
+	NSArray *knownCollectors;
 
 	fprintf(stderr, "usage: %s [-achlmv] [-u collector]\n", argv0);
 	fprintf(stderr, "  -a - show tracks that have missing or duplicate artwork (overrides -c)\n");
@@ -187,19 +229,16 @@ void usage(void)
 	fprintf(stderr, "  -v - print verbose output\n");
 	// TODO prettyprint this somehow
 	fprintf(stderr, "known collectors; without -u, each is tried in this order:\n");
-	for (i = 0; collectors[i] != NULL; i++) {
-		Class<Collector> class;
-
-		class = GETCLASS(collectors[i]);
-		xfprintf(stderr, @" %s\n  %@\n",
-			collectors[i],
-			[class collectorDescription]);
-	}
+	knownCollectors = defaultCollectorsArray();
+	foreachCollector(knownCollectors, usagePrintCollectors, NULL);
+	[knownCollectors release];
 	exit(1);
 }
 
 int main(int argc, char *argv[])
 {
+	struct tryCollectorsParams p;
+	NSArray *collectors;
 	id<Collector> collector;
 	NSArray *tracks;
 	NSUInteger trackCount;
@@ -258,41 +297,47 @@ int main(int argc, char *argv[])
 
 	timer = [Timer new];
 
-	// TODO this needs massive cleanup
+	memset(&p, 0, sizeof (tryCollectorsParams));
 	if (optCollector != NULL) {
-		for (i = 0; collectors[i] != NULL; i++)
-			if (strcmp(collectors[i], optCollector) == 0)
+		NSString *cs;
+
+		// we're trying one collector
+		// we want errors to go straight to stderr
+		// we also don't need preliminary log messages
+		p.tryingMultiple = NO;
+		p.log = xstderrprintf;
+
+		// move this to a separate function
+		cs = [[NSString alloc] initWithUTF8String:optCollector];
+		collectors = defaultCollectorsArray();
+		for (i = 0; i < [collectors count]; i++)
+			if ([cs isEqual:[collectors objectAtIndex:i]])
 				break;
-		if (collectors[i] == NULL) {
+		[cs release];
+		if (i >= [collectors count]) {
+			[collectors release];
 			fprintf(stderr, "error: unknown collector %s\n", optCollector);
 			usage();
 		}
-		err = nil;
-		collector = tryCollector(optCollector, optArtwork, timer, &err);
-		if (err != nil) {
-			xfprintf(stderr, @"error trying collector %s: %s\n",
-				optCollector, err);
-			[err release];
-			return 1;
-		}
+		[collectors release];
+		collectors = singleCollectorArray(optCollector);
 	} else {
-		collector = nil;
-		for (i = 0; collectors[i] != NULL; i++) {
-			xlog(@"trying collector %s", collectors[i]);
-			err = nil;
-			collector = tryCollector(collectors[i], optArtwork, timer, &err);
-			if (err != nil) {
-				xlog(@"error trying collector %s: %@; skipping\n",
-					collectors[i], err);
-				[err release];
-				continue;
-			}
-			break;
-		}
-		if (collector == nil) {
+		p.tryingMultiple = YES;
+		p.log = xlog;
+		collectors = defaultCollectorsArray();
+	}
+	p.isSigned = isSigned;
+	p.forAlbumArtwork = optArtwork;
+	p.timer = timer;
+	foreachCollector(collectors, tryCollectors, &p);
+	[collectors release];
+	collector = p.collector;
+	if (collector == nil) {
+		// when trying only one collector, tryCollectors() already prints an error message
+		// when trying multiple, there's no error message, so print one now
+		if (p.tryingMultiple)
 			fprintf(stderr, "error: no iTunes collector could be used; cannot continue\n");
-			return 1;
-		}
+		return 1;
 	}
 	xlogtimer(@"load iTunes library", timer, TimerLoad);
 

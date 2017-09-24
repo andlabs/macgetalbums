@@ -35,10 +35,10 @@ NSError *makeError(NSInteger errcode, ...)
 		desc = [desc initWithFormat:@"loading class %@ of NSBundle at %@ failed for some unknown reason", a1, a2];
 		break;
 	case ErrSigningNeeded:
-		desc = [desc initWithFormat:@"collector %s needs signing and we aren't signed", va_arg(ap, const char *)];
+		desc = [desc initWithFormat:@"collector %@ needs signing and we aren't signed", va_arg(ap, NSString *)];
 		break;
 	case ErrCannotCollectArtwork:
-		desc = [desc initWithFormat:@"collector %s can't be used to get album artwork counts", va_arg(ap, const char *)];
+		desc = [desc initWithFormat:@"collector %@ can't be used to get album artwork counts", va_arg(ap, NSString *)];
 		break;
 	default:
 		desc = [desc initWithFormat:@"(unknown error code %ld)", (long) errcode];

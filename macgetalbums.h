@@ -106,7 +106,7 @@ enum {
 	ErrBundleInitFailed,			// args: framework bundle path (NSString *)
 	ErrBundleLoadFailed,		// args: framework bundle path (NSString *)
 	ErrBundleClassNameFailed,	// args: class name (NSString *), framework bundle path (NSString *)
-	ErrSigningNeeded,			// args: collector name (const char *)
-	ErrCannotCollectArtwork,		// args: collector name (const char *)
+	ErrSigningNeeded,			// args: collector name (NSString *)
+	ErrCannotCollectArtwork,		// args: collector name (NSString *)
 };
 extern NSError *makeError(NSInteger errcode, ...);
