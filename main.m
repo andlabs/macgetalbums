@@ -56,10 +56,11 @@ static BOOL tryCollectors(NSString *name, Class<Collector> class, void *data)
 		p->isSigned, p->forAlbumArtwork,
 		p->timer, &err);
 	if (err != nil) {
-		skipping = @"";
+		skipping = @"\n";
 		if (p->tryingMultiple)
+			// no need for a newline in this case; the function pointed to by p->log will do it for us
 			skipping = @"; skipping";
-		(*(p->log))(@"error trying collector %@: %@%@\n",
+		(*(p->log))(@"error trying collector %@: %@%@",
 			name, err, skipping);
 		[err release];
 		return NO;
