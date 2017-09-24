@@ -9,9 +9,6 @@ static BOOL optMinutes = NO;
 static BOOL optArtwork = NO;
 // TODO option to build PDF
 
-// TODO make sure this isn't global
-static BOOL isSigned = NO;
-
 static id<Collector> tryCollector(NSString *name, Class<Collector> class, BOOL isSigned, BOOL forAlbumArtwork, Timer *timer, NSError **err)
 {
 	id<Collector> collector;
@@ -180,6 +177,7 @@ void usage(void)
 
 int main(int argc, char *argv[])
 {
+	BOOL isSigned;
 	BOOL showUsage;
 	id<Collector> collector;
 	NSArray *tracks;
