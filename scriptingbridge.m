@@ -70,6 +70,7 @@
 		NSArray *allDiscNumbers;
 
 		[self->timer start:TimerCollect];
+		// TODO will this include non-music items?
 		tracks = [self->iTunes tracks];
 		nTracks = [tracks count];
 		allArtists = [tracks arrayByApplyingSelector:@selector(artist)];

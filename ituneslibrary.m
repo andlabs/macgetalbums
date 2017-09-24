@@ -115,7 +115,6 @@
 	[super dealloc];
 }
 
-// TODO make this an instance stuff
 - (NSArray *)collectTracks
 {
 	NSArray *tracks;
@@ -127,7 +126,7 @@
 
 	[self->timer start:TimerConvert];
 	items = [[NSMutableArray alloc] initWithCapacity:[tracks count]];
-	// TODO does this only cover music or not? compare to the ScriptingBridge code
+	// TODO this will cover all types of library entries, not just music
 	for (id<ourITLibMediaItem> track in tracks) {
 		Item *item;
 		NSString *trackArtist, *albumArtist;
