@@ -59,7 +59,6 @@ static mach_timebase_info_data_t timebase;
 	if (nsec == 0)
 		return [@"0s" copy];
 	if (nsec < 1000) {
-		// TODO wait, PRIu64 worked before I added inttypes.h... what's going on
 		fmt = [[NSString alloc] initWithFormat:@"%%%sns", PRIu64];
 		ret = [[NSMutableString alloc] initWithFormat:fmt, nsec];
 		[fmt release];
