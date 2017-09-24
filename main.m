@@ -225,6 +225,9 @@ int main(int argc, char *argv[])
 	if (argc != 0)
 		usage();
 
+	if (optVerbose)
+		suppressLogs = NO;
+
 	isSigned = checkIfSigned(&err);
 	if (!isSigned)
 		if (err != nil) {

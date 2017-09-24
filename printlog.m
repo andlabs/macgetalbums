@@ -41,7 +41,7 @@ BOOL suppressLogs = YES;
 
 void xlogv(NSString *fmt, va_list ap)
 {
-	if (!suppressLogs)
+	if (suppressLogs)
 		return;
 	NSLogv(fmt, ap);
 }
