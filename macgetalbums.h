@@ -108,6 +108,9 @@ extern void foreachCollector(NSArray *collectors, foreachCollectorFunc f, void *
 // issigned.m
 extern BOOL checkIfSigned(NSError **err);
 
+// pdf.m
+extern CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes);
+
 // printlog.m
 extern void xvfprintf(FILE *f, NSString *fmt, va_list ap);
 extern void xfprintf(FILE *f, NSString *fmt, ...);

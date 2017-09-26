@@ -43,7 +43,70 @@ static void endPageContext(CGContextRef c, NSGraphicsContext *nc, NSGraphicsCont
 	CGContextRestoreGState(c);
 }
 
-CFDataRef makePDF(NSSet *albums)
+// based on https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/TextLayout/Tasks/StringHeight.html#//apple_ref/doc/uid/20001809-CJBGBIBB
+@interface CSL : NSObject {
+	NSLayoutManager *l;
+	NSTextStorage *s;
+	NSTextContainer *c;
+	NSRange textRange;
+	NSRange glyphRange;
+}
+- (id)initWithText:(NSString *)text width:(CGFloat)width font:(NSFont *)font color:(NSColor *)color;
+- (CGFloat)height;
+- (void)drawAt:(NSPoint)p;
+@end
+
+@implementation CSL
+
+- (id)initWithText:(NSString *)text width:(CGFloat)width font:(NSFont *)font color:(NSColor *)color
+{
+	NSRange textRange;
+
+	self = [super init];
+	if (self) {
+		self->s = [[NSTextStorage alloc] initWithString:text];
+		self->c = [[NSTextContainer alloc] initWithContainerSize:NSMakeSize(width, CGFLOAT_MAX)];
+		self->l = [NSLayoutManager new];
+
+		[self->l addTextContainer:self->c];
+		[self->s addLayoutManager:self->l];
+
+		self->textRange.location = 0;
+		self->textRange.length = [s length];
+		[self->s addAttribute:NSFontAttributeName
+			value:font
+			range:self->textRange];
+		[self->s addAttribute:NSForegroundColorAttributeName
+			value:color
+			range:self->textRange];
+		[self->c setLineFragmentPadding:0];
+
+		self->glyphRange = [self->l glyphRangeForTextContainer:self->c];
+	}
+	return self;
+}
+
+- (void)dealloc
+{
+	[self->l release];
+	[self->s release];
+	[self->c release];
+	[super dealloc];
+}
+
+- (CGFloat)height
+{
+	return [self->l usedRectForTextContainer:self->c].size.height;
+}
+
+- (void)drawAt:(NSPoint)p
+{
+	[self->l drawGlyphsForGlyphRange:self->glyphRange atPoint:p];
+}
+
+@end
+
+CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 {
 	CFMutableDataRef data;
 	CGDataConsumerRef consumer;
@@ -51,6 +114,8 @@ CFDataRef makePDF(NSSet *albums)
 	CGContextRef c;
 	NSGraphicsContext *nc, *prev;
 	NSArray *albumsarr;
+	NSFont *titleFont, *artistFont, *infoFont;
+	NSColor *titleColor, *artistColor, *infoColor;
 	CGFloat x, y;
 	NSUInteger i, nPerRow;
 
@@ -71,8 +136,22 @@ CFDataRef makePDF(NSSet *albums)
 	}
 
 	albumsarr = [albums allObjects];
-	xx TODO switch to an autorelease pool
+	// TODO switch to an autorelease pool
 	[albumsarr retain];
+
+	// TODO switch to an autorelease pool
+	titleFont = [NSFont boldSystemFontOfSize:12];
+	[titleFont retain];
+	titleColor = [NSColor blackColor];
+	[titleColor retain];
+	artistFont = [NSFont systemFontOfSize:12];
+	[artistFont retain];
+	artistColor = [NSColor blackColor];
+	[artistColor retain];
+	infoFont = [NSFont systemFontOfSize:11];
+	[infoFont retain];
+	infoColor = [NSColor darkGrayColor];
+	[infoColor retain];
 
 	nPerRow = 1;
 	for (;;) {
@@ -95,24 +174,77 @@ CFDataRef makePDF(NSSet *albums)
 		NSArray *line;
 		CGFloat lineHeight;
 		CGFloat maxArtworkHeight, maxTextHeight;
+		NSMutableArray *titleCSLs, *artistCSLs, *infoCSLs;
+		NSUInteger j;
 
-		xx get this line's albums
+		// get this line's albums
 		range.location = i;
 		range.length = nPerLine;
 		if ((range.location + range.length) >= [albums count])
 			range.length = [albums count] - range.location;
 		line = [albumsArr subarrayWithRange:range];
-		xx TODO switch to an autorelease pool
+		// TODO switch to an autorelease pool
 		[line retain];
 
-		xx figure out how much vertical space we need
+		titleCSLs = [[NSMutableArray alloc] initWithCapacity:[line count]];
+		artistCSLs = [[NSMutableArray alloc] initWithCapacity:[line count]];
+		infoCSLs = [[NSMutableArray alloc] initWithCapacity:[line count]];
+		for (Item *a in line) {
+			CSL *csl;
+			NSMutableString *infostr;
+			NSString *s;
+
+			csl = [[CSL alloc] initWithString:[a album]
+				width:itemWidth
+				// TODO change all these titleThings to albumThings
+				font:titleFont
+				color:titleColor];
+			[titleCSLs addObject:csl];
+			[csl release];
+			csl = [[CSL alloc] initWithString:[a artist]
+				width:itemWidth
+				font:artistFont
+				color:artistColor];
+			[artistCSLs addObject:csl];
+			[csl release];
+			infostr = [NSMutableString new];
+			[infostr appendFormat:@"%ld", (long) [a year]];
+			[infostr appendString:@" • "];
+			xx TODO song and disc count
+			[infostr appendString:@" • "];
+			s = [[a length] stringWithOnlyMinutes:onlyMinutes];
+			[infostr appendString:s];
+			[s release];
+			csl = [[TextContainerStorageLayout alloc] initWithString:infostr
+				width:itemWidth
+				font:infoFont
+				color:infoColor];
+			[infoCSLs addObject:csl];
+			[csl release];
+			[infostr release];
+		}
+
+		// figure out how much vertical space we need
 		maxArtworkHeight = 0;
-		xx TODO
+		// TODO
 		maxTextHeight = 0;
-		xx TODO
+		for (j = 0; j < [line count]; j++) {
+			CSL *csl;
+			CGFloat h;
+
+			csl = (CSL *) [titleCSLs objectAtIndex:j];
+			h = [csl height];
+			// TODO any extra padding maybe
+			csl = (CSL *) [artistCSLs objectAtIndex:j];
+			h += [csl height];
+			csl = (CSL *) [infoCSLs objectAtIndex:j];
+			h += [csl height];
+			if (maxTextHeight <= h)
+				maxTextHeight = h;
+		}
 		lineHeight = maxArtworkHeight + artworkTextPadding + maxTextHeight;
 
-		xx set up a page if needed
+		// set up a page if needed
 		if (nc != nil && (y - lineHeight) <= margins) {
 			endPageContext(c, nc, prev);
 			nc = nil;
@@ -120,12 +252,38 @@ CFDataRef makePDF(NSSet *albums)
 		}
 		if (nc == nil) {
 			nc = mkPageContext(c, &prev);
-			x = margins;
 			y = pageHeight - margins;
 		}
 
-		xx TODO lay out the line
+		// TODO lay out the artworks
+		y -= maxArtworkHeight;
 
+		y -= artworkTextPadding;
+
+		// lay out the texts
+		x = margins;
+		for (j = 0; j < [line length]; j++) {
+			CSL *csl;
+			CGFloat cy;
+
+			csl = (CSL *) [titleCSLs objectAtIndex:j];
+			cy = y - [csl height];
+			[csl drawAt:NSMakePoint(x, cy)];
+			csl = (CSL *) [artistCSLs objectAtIndex:j];
+			cy -= [csl height];
+			[csl drawAt:NSMakePoint(x, cy)];
+			csl = (CSL *) [infoCSLs objectAtIndex:j];
+			cy -= [csl height];
+			[csl drawAt:NSMakePoint(x, cy)];
+			x += itemWidth + padding;
+		}
+		y -= maxTextHeight;
+
+		y -= padding;
+
+		[infoCSLs release];
+		[artworkCSLs release];
+		[titleCSLs release];
 		[line release];
 	}
 	if (nc != nil) {
@@ -134,6 +292,13 @@ CFDataRef makePDF(NSSet *albums)
 		prev = nil;
 	}
 	CGContextRestoreGState(c);
+
+	[infoColor release];
+	[infoFont release];
+	[artistColor release];
+	[artistFont release];
+	[titleColor release];
+	[titleFont release];
 
 	[albumsarr release];
 

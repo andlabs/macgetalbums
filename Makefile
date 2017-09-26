@@ -10,6 +10,7 @@ MFILES = \
 	item.m \
 	ituneslibrary.m \
 	main.m \
+	pdf.m \
 	printlog.m \
 	scriptingbridge.m \
 	timer.m
