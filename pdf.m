@@ -8,6 +8,7 @@
 #define padding 18
 #define artworkTextPadding 4.5
 
+// TODO save the text matrix
 static NSGraphicsContext *mkPageContext(CGContextRef c, NSGraphicsContext **prev)
 {
 	NSGraphicsContext *new;
@@ -24,6 +25,7 @@ static NSGraphicsContext *mkPageContext(CGContextRef c, NSGraphicsContext **prev
 	// PDF contexts, like other Core Graphics contexts, are flipped
 	// NSLayoutManager expects to draw in a flipped context (otherwise lines flow in reverse order)
 	// so let's make NSGraphicsContext think our context is a genuine flipped context
+	// this *should* be safe...
 	// thanks to/see also:
 	// - bayoubengal in irc.freenode.net #macdev
 	// - https://stackoverflow.com/questions/6404057/create-pdf-in-objective-c
