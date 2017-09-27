@@ -31,7 +31,7 @@ static NSGraphicsContext *mkPageContext(CGContextRef c, NSGraphicsContext **prev
 static void endPageContext(CGContextRef c, NSGraphicsContext *nc, NSGraphicsContext *prev)
 {
 	[nc restoreGraphicsState];
-	[NSGraphicsContext setCurrnetContext:prev];
+	[NSGraphicsContext setCurrentContext:prev];
 	if (prev != nil) {
 		[prev restoreGraphicsState];
 		[prev release];
@@ -60,8 +60,6 @@ static void endPageContext(CGContextRef c, NSGraphicsContext *nc, NSGraphicsCont
 
 - (id)initWithText:(NSString *)text width:(CGFloat)width font:(NSFont *)font color:(NSColor *)color
 {
-	NSRange textRange;
-
 	self = [super init];
 	if (self) {
 		self->s = [[NSTextStorage alloc] initWithString:text];
@@ -110,14 +108,14 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 {
 	CFMutableDataRef data;
 	CGDataConsumerRef consumer;
-	CGSize mediaBox;
+	CGRect mediaBox;
 	CGContextRef c;
 	NSGraphicsContext *nc, *prev;
 	NSArray *albumsarr;
 	NSFont *titleFont, *artistFont, *infoFont;
 	NSColor *titleColor, *artistColor, *infoColor;
 	CGFloat x, y;
-	NSUInteger i, nPerRow;
+	NSUInteger i, nPerLine;
 
 	data = CFDataCreateMutable(NULL, 0);
 	if (data == NULL) {
@@ -126,7 +124,7 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 	}
 	consumer = CGDataConsumerCreateWithCFData(data);
 	// consumer will retain data, according to the Programming Quartz book code samples
-	mediaBox = CGSizeMake(pageWidth, pageHeight);
+	mediaBox = CGRectMake(0, 0, pageWidth, pageHeight);
 	c = CGPDFContextCreate(consumer, &mediaBox, NULL);
 	if (c == NULL) {
 		// TODO produce an error
@@ -153,7 +151,7 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 	infoColor = [NSColor darkGrayColor];
 	[infoColor retain];
 
-	nPerRow = 1;
+	nPerLine = 1;
 	for (;;) {
 		CGFloat items;
 		CGFloat paddings;
@@ -182,7 +180,7 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 		range.length = nPerLine;
 		if ((range.location + range.length) >= [albums count])
 			range.length = [albums count] - range.location;
-		line = [albumsArr subarrayWithRange:range];
+		line = [albumsarr subarrayWithRange:range];
 		// TODO switch to an autorelease pool
 		[line retain];
 
@@ -194,14 +192,14 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 			NSMutableString *infostr;
 			NSString *s;
 
-			csl = [[CSL alloc] initWithString:[a album]
+			csl = [[CSL alloc] initWithText:[a album]
 				width:itemWidth
 				// TODO change all these titleThings to albumThings
 				font:titleFont
 				color:titleColor];
 			[titleCSLs addObject:csl];
 			[csl release];
-			csl = [[CSL alloc] initWithString:[a artist]
+			csl = [[CSL alloc] initWithText:[a artist]
 				width:itemWidth
 				font:artistFont
 				color:artistColor];
@@ -210,12 +208,12 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 			infostr = [NSMutableString new];
 			[infostr appendFormat:@"%ld", (long) [a year]];
 			[infostr appendString:@" • "];
-			xx TODO song and disc count
+			// TODO song and disc count
 			[infostr appendString:@" • "];
 			s = [[a length] stringWithOnlyMinutes:onlyMinutes];
 			[infostr appendString:s];
 			[s release];
-			csl = [[TextContainerStorageLayout alloc] initWithString:infostr
+			csl = [[CSL alloc] initWithText:infostr
 				width:itemWidth
 				font:infoFont
 				color:infoColor];
@@ -262,7 +260,7 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 
 		// lay out the texts
 		x = margins;
-		for (j = 0; j < [line length]; j++) {
+		for (j = 0; j < [line count]; j++) {
 			CSL *csl;
 			CGFloat cy;
 
@@ -282,7 +280,7 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 		y -= padding;
 
 		[infoCSLs release];
-		[artworkCSLs release];
+		[artistCSLs release];
 		[titleCSLs release];
 		[line release];
 	}

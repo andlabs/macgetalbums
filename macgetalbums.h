@@ -2,6 +2,7 @@
 // TODO move file-specific headers out of here
 #import <CoreFoundation/CoreFoundation.h>
 #import <Foundation/Foundation.h>
+#import <AppKit/AppKit.h>
 #import <ScriptingBridge/ScriptingBridge.h>
 #import <Security/Security.h>
 #import <stdio.h>

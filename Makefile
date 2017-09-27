@@ -32,6 +32,7 @@ LDFLAGS = \
 	--std=c99 -g \
 	-framework CoreFoundation \
 	-framework Foundation \
+	-framework AppKit \
 	-framework ScriptingBridge \
 	-framework Security
 
