@@ -14,6 +14,10 @@
 - (NSUInteger)discNumber;
 @end
 
+@protocol ourITLibArtwork<NSObject>
+- (NSImage *)image;			// TODO is this retained?
+@end
+
 @protocol ourITLibMediaItem<NSObject>
 - (NSString *)title;				// does not return retained
 - (id<ourITLibArtist>)artist;		// does not return retained
@@ -21,6 +25,8 @@
 - (NSUInteger)totalTime;
 - (NSUInteger)year;
 - (NSUInteger)trackNumber;
+- (BOOL)hasArtworkAvailable;
+- (id<ourITLibArtwork>)artwork;	// does not return retained
 @end
 
 @protocol ourITLibrary<NSObject>
