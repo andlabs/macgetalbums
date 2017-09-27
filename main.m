@@ -7,7 +7,7 @@ static BOOL optShowCount = NO;
 const char *optCollector = NULL;
 static BOOL optMinutes = NO;
 static BOOL optArtwork = NO;
-// TODO option to build PDF
+static BOOL optPDF = NO;
 
 static id<Collector> tryCollector(NSString *name, Class<Collector> class, BOOL isSigned, BOOL forAlbumArtwork, Timer *timer, NSError **err)
 {
@@ -159,12 +159,13 @@ void usage(void)
 {
 	NSArray *knownCollectors;
 
-	fprintf(stderr, "usage: %s [-achlmv] [-u collector]\n", argv0);
-	fprintf(stderr, "  -a - show tracks that have missing or duplicate artwork (overrides -c)\n");
+	fprintf(stderr, "usage: %s [-achlmpv] [-u collector]\n", argv0);
+	fprintf(stderr, "  -a - show tracks that have missing or duplicate artwork (overrides -c and -p)\n");
 	fprintf(stderr, "  -c - show track and album count and total playing time and quit\n");
 	fprintf(stderr, "  -h - show this help\n");
 	fprintf(stderr, "  -l - show album lengths\n");
 	fprintf(stderr, "  -m - show times in minutes instead of hours and minutes\n");
+	fprintf(stderr, "  -p - create a PDF gallery of albums (overrides -c)\n");
 	fprintf(stderr, "  -u - use the specified collector\n");
 	fprintf(stderr, "  -v - print verbose output\n");
 	// TODO prettyprint this somehow
@@ -189,7 +190,7 @@ int main(int argc, char *argv[])
 	int c;
 
 	argv0 = argv[0];
-	while ((c = getopt(argc, argv, ":achlmu:v")) != -1)
+	while ((c = getopt(argc, argv, ":achlmpu:v")) != -1)
 		switch (c) {
 		case 'v':
 			// TODO rename to -d for debug?
@@ -209,6 +210,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'a':
 			optArtwork = YES;
+			break;
+		case 'p':
+			optPDF = YES;
 			break;
 		case '?':
 			fprintf(stderr, "error: unknown option -%c\n", optopt);
@@ -264,6 +268,21 @@ int main(int argc, char *argv[])
 	trackCount = [tracks count];
 	albums = sortIntoAlbums(tracks, timer, &totalDuration);
 	xlogtimer(@"process tracks", timer, TimerSort);
+
+	if (optPDF) {
+		CFDataRef data;
+		const UInt8 *buf;
+		CFIndex len;
+
+		data = makePDF(albums, optMinutes);
+		buf = CFDataGetBytePtr(data);
+		len = CFDataGetLength(data);
+		// TODO check error
+		// TODO handle short writes by repeatedly calling write() (see also https://stackoverflow.com/questions/32683086/handling-incomplete-write-calls)
+		write(1, buf, len);
+		CFRelease(data);
+		goto done;
+	}
 
 	if (optShowCount) {
 		NSString *totalstr;
