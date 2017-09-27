@@ -56,22 +56,33 @@ enum {
 - (NSString *)stringWithOnlyMinutes:(BOOL)onlyMinutes;
 @end
 
-// item.m
-extern NSString *const compilationArtist;
-@interface Item : NSObject<NSCopying> {
+// track.m
+struct trackParams {
+	NSInteger year;
+	NSString *artist;
+	NSString *album;
+	NSString *title;
+	NSInteger trackNumber;
+	NSInteger trackCount;
+	NSInteger discNumber;
+	NSInteger discCount;
+	NSUInteger artworkCount;
+};
+@interface Item : NSObject {
 	NSInteger year;
 	NSString *artist;
 	NSString *album;
 	Duration *length;
 	NSString *title;
 	NSInteger trackNumber;
+	NSInteger trackCount;
 	NSInteger discNumber;
+	NSInteger discCount;
 	NSUInteger artworkCount;
 }
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa length:(Duration *)l title:(NSString *)tt trackNumber:(NSInteger)tn discNumber:(NSInteger)dn artworkCount:(NSUInteger)ac;
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUInteger)ms title:(NSString *)tt trackNumber:(NSInteger)tn discNumber:(NSInteger)dn artworkCount:(NSUInteger)ac;
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthSeconds:(double)sec title:(NSString *)tt trackNumber:(NSInteger)tn discNumber:(NSInteger)dn artworkCount:(NSUInteger)ac;
-- (void)combineWith:(Item *)i2;
+- (id)initWithParams:(struct trackParams *)p length:(Duration *)l;
+- (id)initWithParams:(struct trackParams *)p lengthMilliseconds:(NSUInteger)ms;
+- (id)initWithParams:(struct trackParams *)p lengthSeconds:(double)sec;
 - (NSInteger)year;
 - (NSString *)artist;
 - (NSString *)album;
@@ -79,6 +90,32 @@ extern NSString *const compilationArtist;
 // you own the returned string
 - (NSString *)formattedNumberTitleArtistAlbum;
 - (NSUInteger)artworkCount;
+@end
+
+// album.m
+extern NSString *const compilationArtist;
+@interface Album : NSObject {
+	NSInteger year;
+	NSString *artist;
+	NSString *album;
+	Duration *length;
+	NSInteger trackCount;
+	NSInteger discCount;
+	id<NSObject> firstTrack;		// for saving during collection to figure out what to get artwork from; should be nil afterwards
+	NSImage *firstArtwork;
+}
+- (id)initWithYear:(NSInteger)year artist:(NSString *)a album:(NSString *)al;
+- (void)addTrack:(Track *)t;
+- (NSInteger)year;
+- (NSString *)artist;
+- (NSString *)album;
+- (Duration *)length;
+- (NSInteger)trackCount;
+- (NSInteger)discCount;
+- (id<NSObject>)firstTrack;
+- (void)setFirstTrack:(id<NSObject>)ft;
+- (NSImage *)firstArtwork;
+- (void)setFirstArtworkAndReleaseFirstTrack:(NSImage *)a;
 @end
 
 // collector.m
@@ -90,8 +127,8 @@ extern NSString *const compilationArtist;
 + (BOOL)canGetArtworkCount;
 // you own the returned error
 - (id)initWithTimer:(Timer *)t error:(NSError **)err;
-// you own the returned array
-- (NSArray *)collectTracks;
+// you own the returned array and set
+- (NSArray *)collectTracksAndAlbums:(NSSet **)albums;
 @end
 extern NSArray *defaultCollectorsArray(void);
 extern NSArray *singleCollectorArray(const char *what);
