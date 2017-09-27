@@ -167,6 +167,7 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 
 	CGContextSaveGState(c);
 	i = 0;
+	nc = nil;
 	while (i < [albums count]) {
 		NSRange range;
 		NSArray *line;
@@ -278,6 +279,7 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 		y -= maxTextHeight;
 
 		y -= padding;
+		i += [line count];
 
 		[infoCSLs release];
 		[artistCSLs release];
