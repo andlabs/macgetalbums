@@ -21,7 +21,18 @@ static NSGraphicsContext *mkPageContext(CGContextRef c, NSGraphicsContext **prev
 		[*prev saveGraphicsState];
 		[*prev retain];
 	}
-	new = [NSGraphicsContext graphicsContextWithGraphicsPort:c flipped:NO];
+	// PDF contexts, like other Core Graphics contexts, are flipped
+	// NSLayoutManager expects to draw in a flipped context (otherwise lines flow in reverse order)
+	// so let's make NSGraphicsContext think our context is a genuine flipped context
+	// thanks to/see also:
+	// - bayoubengal in irc.freenode.net #macdev
+	// - https://stackoverflow.com/questions/6404057/create-pdf-in-objective-c
+	// - https://developer.apple.com/library/content/documentation/GraphicsImaging/Conceptual/drawingwithquartz2d/dq_context/dq_context.html (moreso the note about iOS but it applies here too)
+	CGContextTranslateCTM(c, 0, pageHeight);
+	CGContextScaleCTM(c, 1.0, -1.0);
+	// and do this too just to be safe
+	CGContextSetTextMatrix(c, CGAffineTransformIdentity);
+	new = [NSGraphicsContext graphicsContextWithGraphicsPort:c flipped:YES];
 	[new retain];
 	[NSGraphicsContext setCurrentContext:new];
 	[new saveGraphicsState];
@@ -37,6 +48,7 @@ static void endPageContext(CGContextRef c, NSGraphicsContext *nc, NSGraphicsCont
 		[prev release];
 	}
 	[nc release];
+	// this resets the CTM flipping done with mkPageContext()
 	CGContextRestoreGState(c);
 
 	CGContextEndPage(c);
@@ -244,20 +256,20 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 		lineHeight = maxArtworkHeight + artworkTextPadding + maxTextHeight;
 
 		// set up a page if needed
-		if (nc != nil && (y - lineHeight) <= margins) {
+		if (nc != nil && (y + lineHeight) >= (pageHeight - margins)) {
 			endPageContext(c, nc, prev);
 			nc = nil;
 			prev = nil;
 		}
 		if (nc == nil) {
 			nc = mkPageContext(c, &prev);
-			y = pageHeight - margins;
+			y = margins;
 		}
 
 		// TODO lay out the artworks
-		y -= maxArtworkHeight;
+		y += maxArtworkHeight;
 
-		y -= artworkTextPadding;
+		y += artworkTextPadding;
 
 		// lay out the texts
 		x = margins;
@@ -266,19 +278,20 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 			CGFloat cy;
 
 			csl = (CSL *) [titleCSLs objectAtIndex:j];
-			cy = y - [csl height];
+			cy = y;
 			[csl drawAt:NSMakePoint(x, cy)];
+			cy += [csl height];
 			csl = (CSL *) [artistCSLs objectAtIndex:j];
-			cy -= [csl height];
 			[csl drawAt:NSMakePoint(x, cy)];
+			cy += [csl height];
 			csl = (CSL *) [infoCSLs objectAtIndex:j];
-			cy -= [csl height];
 			[csl drawAt:NSMakePoint(x, cy)];
+			cy += [csl height];
 			x += itemWidth + padding;
 		}
-		y -= maxTextHeight;
+		y += maxTextHeight;
 
-		y -= padding;
+		y += padding;
 		i += [line count];
 
 		[infoCSLs release];
