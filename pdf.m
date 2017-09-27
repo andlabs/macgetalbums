@@ -1,11 +1,11 @@
 // 25 september 2017
 #import "macgetalbums.h"
 
-#define pageWidth 612
-#define pageHeight 792
-#define margins 72
-#define itemWidth 108
-#define padding 18
+#define pageWidth 612.0
+#define pageHeight 792.0
+#define margins 72.0
+#define itemWidth 108.0
+#define padding 18.0
 #define artworkTextPadding 4.5
 
 // TODO save the text matrix
@@ -166,15 +166,14 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 	[infoColor retain];
 
 	nPerLine = 1;
+	// TODO make this logic clear somehow
 	for (;;) {
 		CGFloat items;
 		CGFloat paddings;
-		CGFloat width;
 
 		items = itemWidth * (CGFloat) nPerLine;
 		paddings = padding * (CGFloat) (nPerLine - 1);
-		width = pageWidth - margins - margins;
-		if ((items + padding) > width)
+		if ((margins + items + padding) >= (pageWidth - margins - itemWidth))
 			break;
 		nPerLine++;
 	}
