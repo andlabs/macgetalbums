@@ -11,7 +11,7 @@ NSString *const compilationArtist = @"(compilation)";
 {
 	self = [super init];
 	if (self) {
-		self->year = 0;
+		self->year = NSIntegerMax;
 		// use the album artist if there, track artist otherwise
 		self->artist = aa;
 		[self->artist retain];

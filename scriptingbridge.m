@@ -96,7 +96,7 @@ static BOOL trackEarlierThan(iTunesTrack *a, iTunesTrack *b)
 		allTrackNumbers = [tracks arrayByApplyingSelector:@selector(trackNumber)];
 		allTrackCounts = [tracks arrayByApplyingSelector:@selector(trackCount)];
 		allDiscNumbers = [tracks arrayByApplyingSelector:@selector(discNumber)];
-		allDiscCounts = [tracks arrayByApplyingSelector:@selector(discCounts)];
+		allDiscCounts = [tracks arrayByApplyingSelector:@selector(discCount)];
 		// sadly we can't do this with artworks, as that'll just give uxxx a flat list of nTracks iTunesArtwork instances which won't work for whatever reason
 		// alas, that leaves us with having to iterate below :/
 		// TODO is there another way?
