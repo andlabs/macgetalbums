@@ -5,29 +5,9 @@
 
 NSString *const compilationArtist = @"(compilation)";
 
-static const struct {
-	NSInteger year;
-	NSString *artist;
-	NSString *album;
-} overrides[] = {
-	// Each track on this album of previously unreleased material
-	// is dated individually, so our "earliest year" algoritm doesn't
-	// reflect the actual release date.
-	{ 2011, @"Amy Winehouse", @"Lioness: Hidden Treasures" },
+@implementation Album
 
-	// Some songs say 1982 (the year the film was released),
-	// others say 1994 (the year the first disc was released);
-	// neither of these might be accurate for each particular song.
-	// Let's go with the year this particular release was released
-	// (the 25th anniversary of the original film's release).
-	{ 2007, @"Vangelis", @"Blade Runner Trilogy" },
-
-	{ 0, nil, nil },
-};
-
-@implementation Item
-
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa length:(Duration *)l title:(NSString *)tt trackNumber:(NSInteger)tn discNumber:(NSInteger)dn artworkCount:(NSUInteger)ac
+- (id)initWithYear:(NSInteger)year artist:(NSString *)aa album:(NSString *)a
 {
 	self = [super init];
 	if (self) {
@@ -36,105 +16,41 @@ static const struct {
 		self->year = y;
 		// use the album artist if there, track artist otherwise
 		self->artist = aa;
-		// iTunesLibrary.framework does this
-		// we do this too in -copyWithZone: below
-		if (self->artist == nil)
-			self->artist = @"";
-		if ([self->artist isEqual:@""])
-			self->artist = ta;
 		[self->artist retain];
 		self->album = a;
 		[self->album retain];
-		self->length = l;
-		[self->length retain];
-		self->title = tt;
-		[self->title retain];
-		self->trackNumber = tn;
-		self->discNumber = dn;
-		self->artworkCount = ac;
-
-		// handle overrides
-		for (i = 0; overrides[i].artist != nil; i++)
-			if ([self->artist isEqual:overrides[i].artist] &&
-				[self->album isEqual:overrides[i].album]) {
-				self->year = overrides[i].year;
-				break;
-			}
+		self->length = [[Duration alloc] initWithMilliseconds:0];
+		self->trackCount = 0;
+		self->discCount = 0;
+		self->firstTrack = nil;
+		self->firstArtwork = nil;
 	}
 	return self;
 }
 
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUInteger)ms title:(NSString *)tt trackNumber:(NSInteger)tn discNumber:(NSInteger)dn artworkCount:(NSUInteger)ac
-{
-	Duration *l;
-
-	l = [[Duration alloc] initWithMilliseconds:ms];
-	self = [self initWithYear:y
-		trackArtist:ta
-		album:a
-		albumArtist:aa
-		length:l
-		title:tt
-		trackNumber:tn
-		discNumber:dn
-		artworkCount:ac];
-	[l release];			// release the initial reference
-	return self;
-}
-
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthSeconds:(double)sec title:(NSString *)tt trackNumber:(NSInteger)tn discNumber:(NSInteger)dn artworkCount:(NSUInteger)ac
-{
-	Duration *l;
-
-	l = [[Duration alloc] initWithSeconds:sec];
-	self = [self initWithYear:y
-		trackArtist:ta
-		album:a
-		albumArtist:aa
-		length:l
-		title:tt
-		trackNumber:tn
-		discNumber:dn
-		artworkCount:ac];
-	[l release];			// release the initial reference
-	return self;
-}
-
-- (id)copyWithZone:(NSZone *)zone
-{
-	Item *i;
-	Duration *l2;
-
-	l2 = [self->length copy];
-	i = [[[self class] allocWithZone:zone] initWithYear:self->year
-		trackArtist:self->artist
-		album:self->album
-		albumArtist:nil		// see above
-		length:l2
-		title:self->title
-		trackNumber:self->trackNumber
-		discNumber:self->discNumber
-		artworkCount:self->artworkCount];
-	[l2 release];			// release the initial reference
-	return i;
-}
-
 - (void)dealloc
 {
-	[self->artist release];
-	[self->album release];
+	if (self->firstArtwork != nil)
+		[self->firstArtwork release];
+	if (self->firstTrack != nil)
+		[self->firstTrack release];
 	[self->length release];
-	[self->title release];
+	[self->album release];
+	[self->artist release];
 	[super dealloc];
 }
 
-- (void)combineWith:(Item *)i2
+- (void)addTrack:(Track *)t
 {
 	// always use the earliest year
-	if (self->year > i2->year)
-		self->year = i2->year;
+	if (self->year > [t year])
+		self->year = [t year];
 	// and combine the lengths
-	[self->length add:i2->length];
+	[self->length add:[t length]];
+	// TODO use [t trackCount], or remove it?
+	self->trackCount++;
+	if (self->discCount < [t discCount])
+		self->discCount = [t discCount];
 }
 
 - (NSInteger)year
@@ -157,23 +73,67 @@ static const struct {
 	return self->length;
 }
 
-- (NSString *)formattedNumberTitleArtistAlbum
+- (NSInteger)trackCount
 {
-	NSString *base;
-	NSString *ret;
-
-	base = [[NSString alloc] initWithFormat:@"%@ (%@, %@)", self->title, self->artist, self->album];
-	if (self->discNumber == 0)
-		ret = [[NSString alloc] initWithFormat:@"   %02ld %@", (long) (self->trackNumber), base];
-	else
-		ret = [[NSString alloc] initWithFormat:@"% 2ld-%02ld %@", (long) (self->discNumber), (long) (self->trackNumber), base];
-	[base release];
-	return ret;
+	return self->trackCount;
 }
 
-- (NSUInteger)artworkCount
+- (NSInteger)discCount
 {
-	return self->artworkCount;
+	return self->discCount;
+}
+
+- (id<NSObject>)firstTrack
+{
+	return self->firstTrack;
+}
+
+- (void)setFirstTrack:(id<NSObject>)ft
+{
+	if (self->firstTrack != nil)
+		[self->firstTrack release];
+	self->firstTrack = ft;
+	if (self->firstTrack != nil)
+		[self->firstTrack retain];
+}
+
+- (NSImage *)firstArtwork
+{
+	return self->firstArtwork;
+}
+
+- (void)setFirstArtwork:(NSImage *)a
+{
+	if (self->firstArtwork != nil)
+		[self->firstArtwork release];
+	self->firstArtwork = a;
+	if (self->firstArtwork != nil)
+		[self->firstArtwork retain];
+}
+
+// note that these two operate like prepare.sh
+- (NSComparisonResult)compareForSortByYear:(Album *)b
+{
+	NSComparisonResult r;
+
+	if (self->year < b->year)
+		return NSOrderedAscending;
+	if (self->year > b->year)
+		return NSOrderedDescending;
+	r = [self->artist compare:b->artist];
+	if (r != NSOrderedSame)
+		return r;
+	return [self->album compare:b->album];
+}
+
+- (NSComparisonResult)compareForSortByLength:(Album *)b
+{
+	NSComparisonResult r;
+
+	r = [self->length compare:b->length];
+	if (r != NSOrderedSame)
+		return r;
+	return [self compareForSortByYear:b];
 }
 
 // see also https://www.mikeash.com/pyblog/friday-qa-2010-06-18-implementing-equality-and-hashing.html (thanks mattstevens in irc.freenode.net #macdev)

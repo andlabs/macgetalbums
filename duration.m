@@ -98,4 +98,17 @@
 		(uintmax_t) h, (uintmax_t) m, (uintmax_t) s];
 }
 
+- (NSComparisonResult)compare:(Duration *)b
+{
+	NSUInteger ma, mb;
+
+	ma = [self milliseconds];
+	mb = [b milliseconds];
+	if (ma < mb)
+		return NSOrderedAscending;
+	if (ma > mb)
+		return NSOrderedDescending;
+	return NSOrderedSame;
+}
+
 @end

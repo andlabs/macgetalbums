@@ -54,6 +54,7 @@ enum {
 - (NSUInteger)milliseconds;
 // you own the returned string
 - (NSString *)stringWithOnlyMinutes:(BOOL)onlyMinutes;
+- (NSComparisonResult)compare:(Duration *)b;
 @end
 
 // track.m
@@ -104,7 +105,7 @@ extern NSString *const compilationArtist;
 	id<NSObject> firstTrack;		// for saving during collection to figure out what to get artwork from; should be nil afterwards
 	NSImage *firstArtwork;
 }
-- (id)initWithYear:(NSInteger)year artist:(NSString *)a album:(NSString *)al;
+- (id)initWithYear:(NSInteger)year artist:(NSString *)aa album:(NSString *)a;
 - (void)addTrack:(Track *)t;
 - (NSInteger)year;
 - (NSString *)artist;
@@ -115,7 +116,9 @@ extern NSString *const compilationArtist;
 - (id<NSObject>)firstTrack;
 - (void)setFirstTrack:(id<NSObject>)ft;
 - (NSImage *)firstArtwork;
-- (void)setFirstArtworkAndReleaseFirstTrack:(NSImage *)a;
+- (void)setFirstArtwork:(NSImage *)a;
+- (NSComparisonResult)compareForSortByYear:(Album *)b;
+- (NSComparisonResult)compareForSortByLength:(Album *)b;
 @end
 
 // collector.m
