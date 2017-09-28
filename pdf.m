@@ -119,6 +119,29 @@ static void endPageContext(CGContextRef c, NSGraphicsContext *nc, NSGraphicsCont
 
 @end
 
+// you own the returned image
+static NSImage *scaleImage(NSImage *artwork, CGFloat width)
+{
+	NSImage *out;
+	NSSize asize, bsize;
+	NSRect r;
+
+	asize = [artwork size];
+	bsize.width = width;
+	bsize.height = (asize.height * bsize.width) / asize.width;
+	out = [[NSImage alloc] initWithSize:bsize];
+	[NSGraphicsContext saveGraphicsState];
+	[out lockFocus];
+	r.origin = NSZeroPoint;
+	r.size = bsize;
+	[artwork drawInRect:r];
+	[out unlockFocus];
+	[NSGraphicsContext restoreGraphicsState];
+	// TODO is this correct?
+	[out recache];
+	return out;
+}
+
 CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 {
 	CFMutableDataRef data;
@@ -187,6 +210,7 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 		NSArray *line;
 		CGFloat lineHeight;
 		CGFloat maxArtworkHeight, maxTextHeight;
+		NSMutableArray *scaledArtworks;
 		NSMutableArray *titleCSLs, *artistCSLs, *infoCSLs;
 		NSUInteger j;
 
@@ -199,6 +223,7 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 		// TODO switch to an autorelease pool
 		[line retain];
 
+		scaledArtworks = [[NSMutableArray alloc] initWithCapacity:[line count]];
 		titleCSLs = [[NSMutableArray alloc] initWithCapacity:[line count]];
 		artistCSLs = [[NSMutableArray alloc] initWithCapacity:[line count]];
 		infoCSLs = [[NSMutableArray alloc] initWithCapacity:[line count]];
@@ -207,6 +232,15 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 			NSMutableString *infostr;
 			NSString *s;
 
+			if ([a firstArtwork] == nil)
+				[scaledArtworks addObject:[NSNull null]];
+			else {
+				NSImage *scaled;
+
+				scaled = scaleImage([a firstArtwork], itemWidth);
+				[scaledArtworks addObject:scaled];
+				[scaled release];
+			}
 			csl = [[CSL alloc] initWithText:[a album]
 				width:itemWidth
 				// TODO change all these titleThings to albumThings
@@ -239,13 +273,18 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 
 		// figure out how much vertical space we need
 		maxArtworkHeight = 0;
-		for (Album *a in line) {
+		for (j = 0; j < [line count]; j++) {
+			id obj;
+			NSImage *img;
 			CGFloat height;
 
 			// make the no-artwork space square
 			height = itemWidth;
-			if ([a firstArtwork] != nil)
-				height = [[a firstArtwork] size].height;
+			obj = [scaledArtworks objectAtIndex:j];
+			if (obj != [NSNull null]) {
+				img = (NSImage *) obj;
+				height = [img size].height;
+			}
 			if (maxArtworkHeight < height)
 				maxArtworkHeight = height;
 		}
@@ -279,20 +318,20 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 
 		// lay out the artworks
 		x = margins;
-		for (Album *a in line) {
+		for (j = 0; j < [line count]; j++) {
+			id obj;
+			NSImage *img;
 			NSRect r;
 
 			r.origin.x = x;
 			r.origin.y = y;
-			if ([a firstArtwork] == nil)
+			obj = [scaledArtworks objectAtIndex:j];
+			if (obj == [NSNull null])
 				/* TODO draw a default image here */;
 			else {
-				NSSize fromSize;
-
-				fromSize = [[a firstArtwork] size];
-				r.size.width = itemWidth;
-				r.size.height = (fromSize.height * r.size.width) / fromSize.width;
-				[[a firstArtwork] drawInRect:r];
+				img = (NSImage *) obj;
+				r.size = [img size];
+				[img drawInRect:r];
 			}
 			x += itemWidth + padding;
 		}
@@ -326,6 +365,7 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 		[infoCSLs release];
 		[artistCSLs release];
 		[titleCSLs release];
+		[scaledArtworks release];
 		[line release];
 	}
 	if (nc != nil) {
