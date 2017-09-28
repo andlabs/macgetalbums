@@ -174,8 +174,8 @@ static BOOL trackEarlierThan(id<ourITLibMediaItem> a, id<ourITLibMediaItem> b)
 
 		[tracksOut addObject:trackOut];
 		albumOut = albumInSet(albumsOut,
-			[tracksOut artist],
-			[tracksOut album]);
+			[trackOut artist],
+			[trackOut album]);
 		[albumOut addTrack:trackOut];
 		// we only want album artwork from the first track
 		firstTrack = (id<ourITLibMediaItem>) [albumOut firstTrack];
@@ -185,14 +185,13 @@ static BOOL trackEarlierThan(id<ourITLibMediaItem> a, id<ourITLibMediaItem> b)
 
 		[trackOut release];		// and release the initial reference
 	}
-	[self->timer end];
 
 	// now collect album artworks
 	// even if we aren't, we should release our firstTracks anyway
 	for (Album *a in albumsOut) {
 		id<ourITLibMediaItem> firstTrack;
 
-		firstTrack = [a firstTrack];
+		firstTrack = (id<ourITLibMediaItem>) [a firstTrack];
 		if (firstTrack == nil)
 			continue;
 		if (withArtwork) {
@@ -200,10 +199,11 @@ static BOOL trackEarlierThan(id<ourITLibMediaItem> a, id<ourITLibMediaItem> b)
 		}
 		[a setFirstTrack:nil];
 	}
+	[self->timer end];
 
 	// don't release anything; we don't own references to them
 	*albums = albumsOut;
-	return items;
+	return tracksOut;
 }
 
 @end

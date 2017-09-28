@@ -1,6 +1,16 @@
 // 22 august 2017
 #import "macgetalbums.h"
 
+static BOOL trackEarlierThan(iTunesTrack *a, iTunesTrack *b)
+{
+	if ([a discNumber] > [b discNumber])
+		return NO;
+	if ([a discNumber] < [b discNumber])
+		return YES;
+	// same disc; earlier track?
+	return [a trackNumber] < [b trackNumber];
+}
+
 // TODO figure out how far back we can have ivars in @implementation
 @implementation ScriptingBridgeCollector {
 	Timer *timer;
@@ -51,9 +61,10 @@
 	[super dealloc];
 }
 
-- (NSArray *)collectTracks
+- (NSArray *)collectTracksAndAlbums:(NSSet **)albums withArtwork:(BOOL)withArtwork
 {
-	NSMutableArray *items;
+	NSMutableArray *tracksOut;
+	NSMutableSet *albumsOut;
 	NSUInteger i, nTracks;
 
 	@autoreleasepool {
@@ -67,7 +78,9 @@
 		NSArray *allDurations;
 		NSArray *allNames;
 		NSArray *allTrackNumbers;
+		NSArray *allTrackCounts;
 		NSArray *allDiscNumbers;
+		NSArray *allDiscCounts;
 
 		[self->timer start:TimerCollect];
 		// TODO will this include non-music items?
@@ -81,48 +94,82 @@
 		allDurations = [tracks arrayByApplyingSelector:@selector(duration)];
 		allNames = [tracks arrayByApplyingSelector:@selector(name)];
 		allTrackNumbers = [tracks arrayByApplyingSelector:@selector(trackNumber)];
+		allTrackCounts = [tracks arrayByApplyingSelector:@selector(trackCount)];
 		allDiscNumbers = [tracks arrayByApplyingSelector:@selector(discNumber)];
+		allDiscCounts = [tracks arrayByApplyingSelector:@selector(discCounts)];
 		// sadly we can't do this with artworks, as that'll just give uxxx a flat list of nTracks iTunesArtwork instances which won't work for whatever reason
 		// alas, that leaves us with having to iterate below :/
 		// TODO is there another way?
 		[self->timer end];
 
 		[self->timer start:TimerConvert];
-		items = [[NSMutableArray alloc] initWithCapacity:nTracks];
+		tracksOut = [[NSMutableArray alloc] initWithCapacity:nTracks];
+		albumsOut = [[NSMutableSet alloc] initWithCapacity:nTracks];
 		for (i = 0; i < nTracks; i++) {
-			Item *item;
-			NSString *trackArtist, *albumArtist;
 			iTunesTrack *track;
+			Track *trackOut;
+			Album *albumOut;
+			struct trackParams p;
+			iTunesTrack *firstTrack;
 
+			track = (iTunesTrack *) [tracks objectAtIndex:i];
+
+			memset(&p, 0, sizeof (trackParams));
 #define typeAtIndex(t, a, i) ((t *) [(a) objectAtIndex:(i)])
 #define stringAtIndex(a, i) typeAtIndex(NSString, a, i)
 #define numberAtIndex(a, i) typeAtIndex(NSNumber, a, i)
 #define boolAtIndex(a, i) [numberAtIndex(a, i) boolValue]
 #define integerAtIndex(a, i) [numberAtIndex(a, i) integerValue]
 #define doubleAtIndex(a, i) [numberAtIndex(a, i) doubleValue]
-			trackArtist = stringAtIndex(allArtists, i);
-			albumArtist = stringAtIndex(allAlbumArtists, i);
+			p.year = integerAtIndex(allYears, i)
+			p.trackArtist = stringAtIndex(allArtists, i);
+			p.albumArtist = stringAtIndex(allAlbumArtists, i);
 			if (boolAtIndex(allCompilations, i) != NO) {
-				trackArtist = compilationArtist;
-				albumArtist = compilationArtist;
+				p.trackArtist = compilationArtist;
+				p.albumArtist = compilationArtist;
 			}
-			track = (iTunesTrack *) [tracks objectAtIndex:i];
-			item = [[Item alloc] initWithYear:integerAtIndex(allYears, i)
-				trackArtist:trackArtist
-				album:stringAtIndex(allAlbums, i)
-				albumArtist:albumArtist
-				lengthSeconds:doubleAtIndex(allDurations, i)
-				title:stringAtIndex(allNames, i)
-				trackNumber:integerAtIndex(allTrackNumbers, i)
-				discNumber:integerAtIndex(allDiscNumbers, i)
-				artworkCount:[[track artworks] count]];
-			[items addObject:item];
-			[item release];		// and release the initial reference
+			p.album = stringAtIndex(allAlbums, i)
+			p.title = stringAtIndex(allNames, i);
+			p.trackNumber = integerAtIndex(allTrackNumbers, i);
+			p.trackCount = integerAtIndex(allTrackCounts, i);
+			p.discNumber = integerAtIndex(allDiscNumbers, i);
+			p.discCount = integerAtIndex(allDiscCounts, i);
+			p.artworkCount = [[track artworks] count];
+			trackOut = [[Track alloc] initWithParams:&p
+				lengthSeconds:doubleAtIndex(allDurations, i)];
+
+			[tracksOut addObject:trackOut];
+			albumOut = albumInSet(albumsOut,
+				[trackOut artist],
+				[trackOut album]);
+			[albumOut addTrack:trackOut];
+			// we only want album artwork from the first track
+			firstTrack = (iTunesTrack *) [albumOut firstTrack];
+			if (firstTrack == nil || !trackEarlierThan(firstTrack, track))
+				[albumOut setFirstTrack:track];
+			[albumOut release];
+
+			[trackOut release];		// and release the initial reference
+		}
+
+		// now collect album artworks
+		// even if we aren't, we should release our firstTracks anyway
+		for (Album *a in albumsOut) {
+			iTunesTrack *firstTrack;
+
+			firstTrack = (iTunesTrack *) [a firstTrack];
+			if (firstTrack == nil)
+				continue;
+			if (withArtwork) {
+				// TODO
+			}
+			[a setFirstTrack:nil];
 		}
 		[self->timer end];
 	}
 
-	return items;
+	*albums = albumsOut;
+	return tracksOut;
 }
 
 @end
