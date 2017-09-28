@@ -104,37 +104,24 @@ static id<Collector> tryCollectors(BOOL isSigned, Timer *timer, BOOL *showUsage)
 	return p.collector;
 }
 
-// you own the returned NSSet
-static NSSet *sortIntoAlbums(NSArray *tracks, Timer *timer, Duration **totalDuration)
+// you own the returned duration
+// TODO this isn't really needed anymore... nor is the timer... (it used to sort tracks into albums but that's now part of the collection phase)
+// TODO will adding the album durations give the same result?
+static Duration *findTotalDuration(NSArray *tracks, Timer *timer)
 {
-	NSMutableSet *albums;
+	Duration *totalDuration
 
-	albums = [[NSMutableSet alloc] initWithCapacity:[tracks count]];
-	*totalDuration = [[Duration alloc] initWithMilliseconds:0];
+	totalDuration = [[Duration alloc] initWithMilliseconds:0];
 	[timer start:TimerSort];
-	for (Item *track in tracks) {
-		Item *existing;
-
-		// We don't reuse track items for album items.
-		// Instead we copy the first track in an album and then
-		// combine the other tracks with that copy.
-		existing = (Item *) [albums member:track];
-		if (existing != nil)
-			[existing combineWith:track];
-		else {
-			existing = [track copy];
-			[albums addObject:existing];
-			[existing release];		// and release our initial reference
-		}
-		[*totalDuration add:[track length]];
-	}
+	for (Track *t in tracks)
+		[totalDuration add:[t length]];
 	[timer end];
-	return albums;
+	return totalDuration;
 }
 
 static void showArtworkCounts(NSArray *tracks)
 {
-	for (Item *track in tracks)
+	for (Track *track in tracks)
 		if ([track artworkCount] != 1) {
 			NSString *f;
 
@@ -253,11 +240,10 @@ int main(int argc, char *argv[])
 	}
 	xlogtimer(@"load iTunes library", timer, TimerLoad);
 
-	tracks = [collector collectTracks];
+	tracks = [collector collectTracksAndAlbums:&albums withArtwork:optPDF];
 	xlogtimer(@"collect tracks", timer, TimerCollect);
 	xlogtimer(@"convert tracks to our internal data structure format", timer, TimerConvert);
 
-	albums = nil;
 	totalDuration = nil;
 
 	if (optArtwork) {
@@ -266,8 +252,8 @@ int main(int argc, char *argv[])
 	}
 
 	trackCount = [tracks count];
-	albums = sortIntoAlbums(tracks, timer, &totalDuration);
-	xlogtimer(@"process tracks", timer, TimerSort);
+	totalDuration = findTotalDuration(tracks, timer);
+	xlogtimer(@"find total duration", timer, TimerSort);
 
 	if (optPDF) {
 		CFDataRef data;
@@ -297,7 +283,8 @@ int main(int argc, char *argv[])
 	}
 
 	// TODO provide a custom separator option
-	for (Item *a in albums) {
+	// TODO provide a custom sort option and default sort by year maybe
+	for (Album *a in albums) {
 		xprintf(@"%ld\t%@\t%@",
 			(long) ([a year]),
 			[a artist],
