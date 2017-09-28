@@ -90,15 +90,6 @@ static const struct {
 	[super dealloc];
 }
 
-- (void)combineWith:(Item *)i2
-{
-	// always use the earliest year
-	if (self->year > i2->year)
-		self->year = i2->year;
-	// and combine the lengths
-	[self->length add:i2->length];
-}
-
 - (NSInteger)year
 {
 	return self->year;

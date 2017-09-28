@@ -7,13 +7,13 @@ NSString *const compilationArtist = @"(compilation)";
 
 @implementation Album
 
-- (id)initWithYear:(NSInteger)year artist:(NSString *)aa album:(NSString *)a
+- (id)initWithArtist:(NSString *)aa album:(NSString *)a
 {
 	self = [super init];
 	if (self) {
 		int i;
 
-		self->year = y;
+		self->year = 0;
 		// use the album artist if there, track artist otherwise
 		self->artist = aa;
 		[self->artist retain];
@@ -147,10 +147,26 @@ NSString *const compilationArtist = @"(compilation)";
 
 - (BOOL)isEqual:(id)obj
 {
-	Item *b = (Item *) obj;
+	Album *b = (Album *) obj;
 
 	return [self->artist isEqual:b->artist] &&
 		[self->album isEqual:b->album];
 }
 
 @end
+
+Album *albumInSet(NSMutableSet *albums, NSString *artist, NSString *album)
+{
+	Album *a;
+	Album *existing;
+
+	a = [[Album alloc] initWithArtist:artist album:album];
+	existing = (Album *) [albums member:a];
+	if (existing != nil) {
+		[a release];
+		[existing retain];
+		return existing;
+	}
+	[albums addObject:a];
+	return a;
+}

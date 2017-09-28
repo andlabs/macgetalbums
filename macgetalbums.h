@@ -111,7 +111,7 @@ extern NSString *const compilationArtist;
 	id<NSObject> firstTrack;		// for saving during collection to figure out what to get artwork from; should be nil afterwards
 	NSImage *firstArtwork;
 }
-- (id)initWithYear:(NSInteger)year artist:(NSString *)aa album:(NSString *)a;
+- (id)initWithArtist:(NSString *)aa album:(NSString *)a;
 - (void)addTrack:(Track *)t;
 - (NSInteger)year;
 - (NSString *)artist;
@@ -126,6 +126,8 @@ extern NSString *const compilationArtist;
 - (NSComparisonResult)compareForSortByYear:(Album *)b;
 - (NSComparisonResult)compareForSortByLength:(Album *)b;
 @end
+// makes and adds a new Album if not present; you must release the return value when done regardless
+extern Album *albumInSet(NSMutableSet *albums, NSString *artist, NSString *album);
 
 // collector.m
 @protocol Collector<NSObject>
@@ -137,7 +139,7 @@ extern NSString *const compilationArtist;
 // you own the returned error
 - (id)initWithTimer:(Timer *)t error:(NSError **)err;
 // you own the returned array and set
-- (NSArray *)collectTracksAndAlbums:(NSSet **)albums;
+- (NSArray *)collectTracksAndAlbums:(NSSet **)albums withArtwork:(BOOL)withArtwork;
 @end
 extern NSArray *defaultCollectorsArray(void);
 extern NSArray *singleCollectorArray(const char *what);

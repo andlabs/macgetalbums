@@ -11,7 +11,9 @@
 - (NSString *)title;				// does not return retained
 - (NSString *)albumArtist;			// does not return retained
 - (BOOL)isCompilation;
+- (NSUInteger)trackCount;
 - (NSUInteger)discNumber;
+- (NSUInteger)discCount;
 @end
 
 @protocol ourITLibArtwork<NSObject>
@@ -33,6 +35,16 @@
 - (instancetype)initWithAPIVersion:(NSString *)version error:(NSError **)err;
 - (NSArray *)allMediaItems;		// does not return retained
 @end
+
+static BOOL trackEarlierThan(id<ourITLibMediaItem> a, id<ourITLibMediaItem> b)
+{
+	if ([[a album] discNumber] > [[b album] discNumber])
+		return NO;
+	if ([[a album] discNumber] < [[b album] discNumber])
+		return YES;
+	// same disc; earlier track?
+	return [a trackNumber] < [b trackNumber];
+}
 
 #define frameworkPath @"/Library/Frameworks/iTunesLibrary.framework"
 
@@ -121,43 +133,76 @@
 	[super dealloc];
 }
 
-- (NSArray *)collectTracks
+- (NSArray *)collectTracksAndAlbums:(NSSet **)albums withArtwork:(BOOL)withArtwork
 {
 	NSArray *tracks;
-	NSMutableArray *items;
+	NSMutableArray *tracksOut;
+	nSMutableSet *albumsOut;
 
 	[self->timer start:TimerCollect];
 	tracks = [self->library allMediaItems];
 	[self->timer end];
 
 	[self->timer start:TimerConvert];
-	items = [[NSMutableArray alloc] initWithCapacity:[tracks count]];
+	tracksOut = [[NSMutableArray alloc] initWithCapacity:[tracks count]];
+	albumsOut = [[NSMutableSet alloc] initWithCapacity:[tracks count]];
 	// TODO this will cover all types of library entries, not just music
 	for (id<ourITLibMediaItem> track in tracks) {
-		Item *item;
-		NSString *trackArtist, *albumArtist;
+		Track *trackOut;
+		Album *albumOut;
+		id<ourITLibMediaItem> firstTrack;
+		struct trackParams p;
 
-		trackArtist = [[track artist] name];
-		albumArtist = [[track album] albumArtist];
+		memset(&p, 0, sizeof (struct trackParams));
+
+		p.year = [track year];
+		p.trackArtist = [[track artist] name];
+		p.albumArtist = [[track album] albumArtist];
 		if ([[track album] isCompilation]) {
-			trackArtist = compilationArtist;
-			albumArtist = compilationArtist;
+			p.trackArtist = compilationArtist;
+			p.albumArtist = compilationArtist;
 		}
-		item = [[Item alloc] initWithYear:[track year]
-			trackArtist:trackArtist
-			album:[[track album] title]
-			albumArtist:albumArtist
-			lengthMilliseconds:[track totalTime]
-			title:[track title]
-			trackNumber:((NSInteger) [track trackNumber])
-			discNumber:((NSInteger) [[track album] discNumber])
-			artworkCount:0];
-		[items addObject:item];
-		[item release];		// and release the initial reference
+		p.album = [[track album] title];
+		p.title = [track title]
+		p.trackNumber = (NSInteger) [track trackNumber];
+		p.trackCount = (NSInteger) [track trackCount];
+		p.discNumber = (NSInteger) [[track album] discNumber];
+		p.discCount = (NSInteger) [[track album] discCount];
+		p.artworkCount = 0;
+		trackOut = [[Track alloc] initWithParams:&p
+			lengthMilliseconds:[track totalTime]];
+
+		[tracksOut addObject:trackOut];
+		albumOut = albumInSet(albumsOut,
+			[tracksOut artist],
+			[tracksOut album]);
+		[albumOut addTrack:trackOut];
+		// we only want album artwork from the first track
+		firstTrack = (id<ourITLibMediaItem>) [albumOut firstTrack];
+		if (firstTrack == nil || !trackEarlierThan(firstTrack, track))
+			[albumOut setFirstTrack:track];
+		[albumOut release];
+
+		[trackOut release];		// and release the initial reference
 	}
 	[self->timer end];
 
+	// now collect album artworks
+	// even if we aren't, we should release our firstTracks anyway
+	for (Album *a in albumsOut) {
+		id<ourITLibMediaItem> firstTrack;
+
+		firstTrack = [a firstTrack];
+		if (firstTrack == nil)
+			continue;
+		if (withArtwork) {
+			// TODO
+		}
+		[a setFirstTrack:nil];
+	}
+
 	// don't release anything; we don't own references to them
+	*albums = albumsOut;
 	return items;
 }
 
