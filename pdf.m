@@ -126,19 +126,21 @@ static NSImage *scaleImage(NSImage *artwork, CGFloat width)
 	NSSize asize, bsize;
 	NSRect r;
 
+	// if we just use -[NSImage drawInRect:], the scaling will look awful
+	// using -[NSImage setSize:] produces much better, if not correct, aling
+	// see also:
+	// - http://www.cocoabuilder.com/archive/cocoa/66193-scaling-down-an-image-proportionally.html
+	// - http://www.cocoabuilder.com/archive/cocoa/127733-nsimage-rescaling.html
+	// - https://stackoverflow.com/questions/11949250/how-to-resize-nsimage
 	asize = [artwork size];
 	bsize.width = width;
 	bsize.height = (asize.height * bsize.width) / asize.width;
-	out = [[NSImage alloc] initWithSize:bsize];
-	[NSGraphicsContext saveGraphicsState];
-	[out lockFocus];
-	r.origin = NSZeroPoint;
-	r.size = bsize;
-	[artwork drawInRect:r];
-	[out unlockFocus];
-	[NSGraphicsContext restoreGraphicsState];
-	// TODO is this correct?
-	[out recache];
+	out = [artwork copy];
+	// TODO call this indirectly to avoid deprecation warning somehow
+	[out setScalesWhenResized:YES];
+	[out setSize:bsize];
+
+	// TODO only problem now is that out is still full quality so the output PDF is HUGE
 	return out;
 }
 
