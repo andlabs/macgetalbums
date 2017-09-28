@@ -194,9 +194,9 @@ static BOOL trackEarlierThan(id<ourITLibMediaItem> a, id<ourITLibMediaItem> b)
 		firstTrack = (id<ourITLibMediaItem>) [a firstTrack];
 		if (firstTrack == nil)
 			continue;
-		if (withArtwork) {
-			// TODO
-		}
+		if (withArtwork)
+			if ([firstTrack hasArtworkAvailable])
+				[a setFirstArtwork:[[firstTrack artwork] image]];
 		[a setFirstTrack:nil];
 	}
 	[self->timer end];

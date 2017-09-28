@@ -4,6 +4,7 @@
 #define pageWidth 612.0
 #define pageHeight 792.0
 #define margins 72.0
+// TODO rename this to albumWidth?
 #define itemWidth 108.0
 #define padding 18.0
 #define artworkTextPadding 4.5
@@ -238,7 +239,16 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 
 		// figure out how much vertical space we need
 		maxArtworkHeight = 0;
-		// TODO
+		for (Album *a in line) {
+			CGFloat height;
+
+			// make the no-artwork space square
+			height = itemWidth;
+			if ([a firstArtwork] != nil)
+				height = [[a firstArtwork] size].height;
+			if (maxArtworkHeight < height)
+				maxArtworkHeight = height;
+		}
 		maxTextHeight = 0;
 		for (j = 0; j < [line count]; j++) {
 			CSL *csl;
@@ -267,7 +277,25 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 			y = margins;
 		}
 
-		// TODO lay out the artworks
+		// lay out the artworks
+		x = margins;
+		for (Album *a in line) {
+			NSRect r;
+
+			r.origin.x = x;
+			r.origin.y = y;
+			if ([a firstArtwork] == nil)
+				/* TODO draw a default image here */;
+			else {
+				NSSize fromSize;
+
+				fromSize = [[a firstArtwork] size];
+				r.size.width = itemWidth;
+				r.size.height = (fromSize.height * r.size.width) / fromSize.width;
+				[[a firstArtwork] drawInRect:r];
+			}
+			x += itemWidth + padding;
+		}
 		y += maxArtworkHeight;
 
 		y += artworkTextPadding;
