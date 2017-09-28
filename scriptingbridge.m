@@ -114,21 +114,21 @@ static BOOL trackEarlierThan(iTunesTrack *a, iTunesTrack *b)
 
 			track = (iTunesTrack *) [tracks objectAtIndex:i];
 
-			memset(&p, 0, sizeof (trackParams));
+			memset(&p, 0, sizeof (struct trackParams));
 #define typeAtIndex(t, a, i) ((t *) [(a) objectAtIndex:(i)])
 #define stringAtIndex(a, i) typeAtIndex(NSString, a, i)
 #define numberAtIndex(a, i) typeAtIndex(NSNumber, a, i)
 #define boolAtIndex(a, i) [numberAtIndex(a, i) boolValue]
 #define integerAtIndex(a, i) [numberAtIndex(a, i) integerValue]
 #define doubleAtIndex(a, i) [numberAtIndex(a, i) doubleValue]
-			p.year = integerAtIndex(allYears, i)
+			p.year = integerAtIndex(allYears, i);
 			p.trackArtist = stringAtIndex(allArtists, i);
 			p.albumArtist = stringAtIndex(allAlbumArtists, i);
 			if (boolAtIndex(allCompilations, i) != NO) {
 				p.trackArtist = compilationArtist;
 				p.albumArtist = compilationArtist;
 			}
-			p.album = stringAtIndex(allAlbums, i)
+			p.album = stringAtIndex(allAlbums, i);
 			p.title = stringAtIndex(allNames, i);
 			p.trackNumber = integerAtIndex(allTrackNumbers, i);
 			p.trackCount = integerAtIndex(allTrackCounts, i);

@@ -109,7 +109,7 @@ static id<Collector> tryCollectors(BOOL isSigned, Timer *timer, BOOL *showUsage)
 // TODO will adding the album durations give the same result?
 static Duration *findTotalDuration(NSArray *tracks, Timer *timer)
 {
-	Duration *totalDuration
+	Duration *totalDuration;
 
 	totalDuration = [[Duration alloc] initWithMilliseconds:0];
 	[timer start:TimerSort];

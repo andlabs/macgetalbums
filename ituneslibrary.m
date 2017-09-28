@@ -137,7 +137,7 @@ static BOOL trackEarlierThan(id<ourITLibMediaItem> a, id<ourITLibMediaItem> b)
 {
 	NSArray *tracks;
 	NSMutableArray *tracksOut;
-	nSMutableSet *albumsOut;
+	NSMutableSet *albumsOut;
 
 	[self->timer start:TimerCollect];
 	tracks = [self->library allMediaItems];
@@ -163,9 +163,9 @@ static BOOL trackEarlierThan(id<ourITLibMediaItem> a, id<ourITLibMediaItem> b)
 			p.albumArtist = compilationArtist;
 		}
 		p.album = [[track album] title];
-		p.title = [track title]
+		p.title = [track title];
 		p.trackNumber = (NSInteger) [track trackNumber];
-		p.trackCount = (NSInteger) [track trackCount];
+		p.trackCount = (NSInteger) [[track album] trackCount];
 		p.discNumber = (NSInteger) [[track album] discNumber];
 		p.discCount = (NSInteger) [[track album] discCount];
 		p.artworkCount = 0;

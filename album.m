@@ -11,8 +11,6 @@ NSString *const compilationArtist = @"(compilation)";
 {
 	self = [super init];
 	if (self) {
-		int i;
-
 		self->year = 0;
 		// use the album artist if there, track artist otherwise
 		self->artist = aa;
@@ -50,8 +48,8 @@ NSString *const compilationArtist = @"(compilation)";
 	// TODO use [t trackCount], or remove it?
 	self->trackCount++;
 	// in the event [t discCount] is 0 but [t discNumber] isn't
-	if (self->discNumber < [t discNumber])
-		self->discNumber = [t discNumber];
+	if (self->discCount < [t discNumber])
+		self->discCount = [t discNumber];
 	if (self->discCount < [t discCount])
 		self->discCount = [t discCount];
 }
