@@ -60,8 +60,9 @@ enum {
 // track.m
 struct trackParams {
 	NSInteger year;
-	NSString *artist;
+	NSString *trackArtist;
 	NSString *album;
+	NSString *albumArtist;
 	NSString *title;
 	NSInteger trackNumber;
 	NSInteger trackCount;
@@ -69,7 +70,7 @@ struct trackParams {
 	NSInteger discCount;
 	NSUInteger artworkCount;
 };
-@interface Item : NSObject {
+@interface Track : NSObject {
 	NSInteger year;
 	NSString *artist;
 	NSString *album;
@@ -88,9 +89,14 @@ struct trackParams {
 - (NSString *)artist;
 - (NSString *)album;
 - (Duration *)length;
+- (NSString *)title;
+- (NSInteger)trackNumber;
+- (NSInteger)trackCount;
+- (NSInteger)discNumber;
+- (NSInteger)discCount;
+- (NSUInteger)artworkCount;
 // you own the returned string
 - (NSString *)formattedNumberTitleArtistAlbum;
-- (NSUInteger)artworkCount;
 @end
 
 // album.m

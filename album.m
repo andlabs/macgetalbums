@@ -49,6 +49,9 @@ NSString *const compilationArtist = @"(compilation)";
 	[self->length add:[t length]];
 	// TODO use [t trackCount], or remove it?
 	self->trackCount++;
+	// in the event [t discCount] is 0 but [t discNumber] isn't
+	if (self->discNumber < [t discNumber])
+		self->discNumber = [t discNumber];
 	if (self->discCount < [t discCount])
 		self->discCount = [t discCount];
 }

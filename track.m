@@ -3,8 +3,6 @@
 
 // TODO drop "length" and use "duration" everywhere?
 
-NSString *const compilationArtist = @"(compilation)";
-
 static const struct {
 	NSInteger year;
 	NSString *artist;
@@ -27,31 +25,30 @@ static const struct {
 
 @implementation Track
 
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa length:(Duration *)l title:(NSString *)tt trackNumber:(NSInteger)tn discNumber:(NSInteger)dn artworkCount:(NSUInteger)ac
+- (id)initWithParams:(struct trackParams *)p length:(Duration *)l
 {
 	self = [super init];
 	if (self) {
 		int i;
 
-		self->year = y;
+		self->year = p->year;
 		// use the album artist if there, track artist otherwise
-		self->artist = aa;
-		// iTunesLibrary.framework does this
-		// we do this too in -copyWithZone: below
-		if (self->artist == nil)
-			self->artist = @"";
-		if ([self->artist isEqual:@""])
-			self->artist = ta;
+		self->artist = p->albumArtist;
+		// iTunesLibrary.framework uses nil; ScriptingBridge uses the empty string (I think; TODO)
+		if (self->artist == nil || [self->artist isEqual:@""])
+			self->artist = p->trackArtist;
 		[self->artist retain];
-		self->album = a;
+		self->album = p->album;
 		[self->album retain];
 		self->length = l;
 		[self->length retain];
-		self->title = tt;
+		self->title = p->title;
 		[self->title retain];
-		self->trackNumber = tn;
-		self->discNumber = dn;
-		self->artworkCount = ac;
+		self->trackNumber = p->trackNumber;
+		self->trackCount = p->trackCount;
+		self->discNumber = p->discNumber;
+		self->discCount = p->discCount;
+		self->artworkCount = p->artworkCount;
 
 		// handle overrides
 		for (i = 0; overrides[i].artist != nil; i++)
@@ -64,67 +61,32 @@ static const struct {
 	return self;
 }
 
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthMilliseconds:(NSUInteger)ms title:(NSString *)tt trackNumber:(NSInteger)tn discNumber:(NSInteger)dn artworkCount:(NSUInteger)ac
+- (id)initWithParams:(struct trackParams *)p lengthMilliseconds:(NSUInteger)ms
 {
 	Duration *l;
 
 	l = [[Duration alloc] initWithMilliseconds:ms];
-	self = [self initWithYear:y
-		trackArtist:ta
-		album:a
-		albumArtist:aa
-		length:l
-		title:tt
-		trackNumber:tn
-		discNumber:dn
-		artworkCount:ac];
+	self = [self initWithParams:p length:l];
 	[l release];			// release the initial reference
 	return self;
 }
 
-- (id)initWithYear:(NSInteger)y trackArtist:(NSString *)ta album:(NSString *)a albumArtist:(NSString *)aa lengthSeconds:(double)sec title:(NSString *)tt trackNumber:(NSInteger)tn discNumber:(NSInteger)dn artworkCount:(NSUInteger)ac
+- (id)initWithParams:(struct trackParams *)p lengthSeconds:(double)sec
 {
 	Duration *l;
 
 	l = [[Duration alloc] initWithSeconds:sec];
-	self = [self initWithYear:y
-		trackArtist:ta
-		album:a
-		albumArtist:aa
-		length:l
-		title:tt
-		trackNumber:tn
-		discNumber:dn
-		artworkCount:ac];
+	self = [self initWithParams:p length:l];
 	[l release];			// release the initial reference
 	return self;
 }
 
-- (id)copyWithZone:(NSZone *)zone
-{
-	Item *i;
-	Duration *l2;
-
-	l2 = [self->length copy];
-	i = [[[self class] allocWithZone:zone] initWithYear:self->year
-		trackArtist:self->artist
-		album:self->album
-		albumArtist:nil		// see above
-		length:l2
-		title:self->title
-		trackNumber:self->trackNumber
-		discNumber:self->discNumber
-		artworkCount:self->artworkCount];
-	[l2 release];			// release the initial reference
-	return i;
-}
-
 - (void)dealloc
 {
-	[self->artist release];
-	[self->album release];
-	[self->length release];
 	[self->title release];
+	[self->length release];
+	[self->album release];
+	[self->artist release];
 	[super dealloc];
 }
 
@@ -157,6 +119,36 @@ static const struct {
 	return self->length;
 }
 
+- (NSString *)title
+{
+	return self->title;
+}
+
+- (NSInteger)trackNumber
+{
+	return self->trackNumber;
+}
+
+- (NSInteger)trackCount
+{
+	return self->trackCount;
+}
+
+- (NSInteger)discNumber
+{
+	return self->discNumber;
+}
+
+- (NSInteger)discCount
+{
+	return self->discCount;
+}
+
+- (NSUInteger)artworkCount
+{
+	return self->artworkCount;
+}
+
 - (NSString *)formattedNumberTitleArtistAlbum
 {
 	NSString *base;
@@ -169,25 +161,6 @@ static const struct {
 		ret = [[NSString alloc] initWithFormat:@"% 2ld-%02ld %@", (long) (self->discNumber), (long) (self->trackNumber), base];
 	[base release];
 	return ret;
-}
-
-- (NSUInteger)artworkCount
-{
-	return self->artworkCount;
-}
-
-// see also https://www.mikeash.com/pyblog/friday-qa-2010-06-18-implementing-equality-and-hashing.html (thanks mattstevens in irc.freenode.net #macdev)
-- (NSUInteger)hash
-{
-	return [self->artist hash] ^ [self->album hash];
-}
-
-- (BOOL)isEqual:(id)obj
-{
-	Item *b = (Item *) obj;
-
-	return [self->artist isEqual:b->artist] &&
-		[self->album isEqual:b->album];
 }
 
 @end
