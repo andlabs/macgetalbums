@@ -201,7 +201,7 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 		titleCSLs = [[NSMutableArray alloc] initWithCapacity:[line count]];
 		artistCSLs = [[NSMutableArray alloc] initWithCapacity:[line count]];
 		infoCSLs = [[NSMutableArray alloc] initWithCapacity:[line count]];
-		for (Item *a in line) {
+		for (Album *a in line) {
 			CSL *csl;
 			NSMutableString *infostr;
 			NSString *s;
