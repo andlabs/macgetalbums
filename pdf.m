@@ -122,25 +122,40 @@ static void endPageContext(CGContextRef c, NSGraphicsContext *nc, NSGraphicsCont
 // you own the returned image
 static NSImage *scaleImage(NSImage *artwork, CGFloat width)
 {
+	NSNumber *quality;
+	NSDictionary *props;
+	NSData *compressedData;
 	NSImage *out;
 	NSSize asize, bsize;
-	NSRect r;
 
-	// if we just use -[NSImage drawInRect:], the scaling will look awful
-	// using -[NSImage setSize:] produces much better, if not correct, aling
-	// see also:
+	// If we don't do this, the PDFs can wind up with huge sizes, even with PNG! This is important for the next step.
+	// It doesn't matter if we do this first or last; the resultant PDFs will have the same size.
+	// TODO fine-tune the quality
+#define jpegQuality 0.85
+	quality = [[NSNumber alloc] initWithDouble:jpegQuality];
+	props = [[NSDictionary alloc] initWithObjectsAndKeys:quality, NSImageCompressionFactor, nil];
+	[quality release];
+	compressedData = [NSBitmapImageRep representationOfImageRepsInArray:[artwork representations]
+		usingType:NSJPEGFileType
+		properties:props];
+	[props release];
+	// TODO do we own compressedData?
+
+	// If we make a new image of the right size and draw into it, the scaling will look awful.
+	// Using -[NSImage setSize:] produces much better, if not correct, aling
+	// Of course, that won't change the image data, hence the compression above.
+	// See also:
 	// - http://www.cocoabuilder.com/archive/cocoa/66193-scaling-down-an-image-proportionally.html
 	// - http://www.cocoabuilder.com/archive/cocoa/127733-nsimage-rescaling.html
 	// - https://stackoverflow.com/questions/11949250/how-to-resize-nsimage
 	asize = [artwork size];
 	bsize.width = width;
 	bsize.height = (asize.height * bsize.width) / asize.width;
-	out = [artwork copy];
+	out = [[NSImage alloc] initWithData:compressedData];
 	// TODO call this indirectly to avoid deprecation warning somehow
 	[out setScalesWhenResized:YES];
 	[out setSize:bsize];
 
-	// TODO only problem now is that out is still full quality so the output PDF is HUGE
 	return out;
 }
 
