@@ -120,16 +120,13 @@ static void endPageContext(CGContextRef c, NSGraphicsContext *nc, NSGraphicsCont
 @end
 
 // you own the returned image
-static NSImage *scaleImage(NSImage *artwork, CGFloat width)
+static NSImage *compressImage(NSImage *artwork)
 {
 	NSNumber *quality;
 	NSDictionary *props;
 	NSData *compressedData;
-	NSImage *out;
-	NSSize asize, bsize;
 
-	// If we don't do this, the PDFs can wind up with huge sizes, even with PNG! This is important for the next step.
-	// It doesn't matter if we do this first or last; the resultant PDFs will have the same size.
+	// If we don't do this, the PDFs can wind up with huge sizes, even with PNG!
 	// TODO fine-tune the quality
 #define jpegQuality 0.85
 	quality = [[NSNumber alloc] initWithDouble:jpegQuality];
@@ -140,23 +137,18 @@ static NSImage *scaleImage(NSImage *artwork, CGFloat width)
 		properties:props];
 	[props release];
 	// TODO do we own compressedData?
+	return [[NSImage alloc] initWithData:compressedData];
+}
 
-	// If we make a new image of the right size and draw into it, the scaling will look awful.
-	// Using -[NSImage setSize:] produces much better, if not correct, aling
-	// Of course, that won't change the image data, hence the compression above.
-	// See also:
-	// - http://www.cocoabuilder.com/archive/cocoa/66193-scaling-down-an-image-proportionally.html
-	// - http://www.cocoabuilder.com/archive/cocoa/127733-nsimage-rescaling.html
-	// - https://stackoverflow.com/questions/11949250/how-to-resize-nsimage
+// you do NOT own the returned size
+static NSValue *scaleImageSize(NSImage *artwork, CGFloat width)
+{
+	NSSize asize, bsize;
+
 	asize = [artwork size];
 	bsize.width = width;
 	bsize.height = (asize.height * bsize.width) / asize.width;
-	out = [[NSImage alloc] initWithData:compressedData];
-	// TODO call this indirectly to avoid deprecation warning somehow
-	[out setScalesWhenResized:YES];
-	[out setSize:bsize];
-
-	return out;
+	return [NSValue valueWithSize:bsize];
 }
 
 CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
@@ -227,7 +219,7 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 		NSArray *line;
 		CGFloat lineHeight;
 		CGFloat maxArtworkHeight, maxTextHeight;
-		NSMutableArray *scaledArtworks;
+		NSMutableArray *compressedArtworks, *scaledSizes;
 		NSMutableArray *titleCSLs, *artistCSLs, *infoCSLs;
 		NSUInteger j;
 
@@ -240,7 +232,8 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 		// TODO switch to an autorelease pool
 		[line retain];
 
-		scaledArtworks = [[NSMutableArray alloc] initWithCapacity:[line count]];
+		compressedArtworks = [[NSMutableArray alloc] initWithCapacity:[line count]];
+		scaledSizes = [[NSMutableArray alloc] initWithCapacity:[line count]];
 		titleCSLs = [[NSMutableArray alloc] initWithCapacity:[line count]];
 		artistCSLs = [[NSMutableArray alloc] initWithCapacity:[line count]];
 		infoCSLs = [[NSMutableArray alloc] initWithCapacity:[line count]];
@@ -249,14 +242,16 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 			NSMutableString *infostr;
 			NSString *s;
 
-			if ([a firstArtwork] == nil)
-				[scaledArtworks addObject:[NSNull null]];
-			else {
-				NSImage *scaled;
+			if ([a firstArtwork] == nil) {
+				[compressedArtworks addObject:[NSNull null]];
+				[scaledSizes addObject:[NSNull null]];
+			} else {
+				NSImage *compressed;
 
-				scaled = scaleImage([a firstArtwork], itemWidth);
-				[scaledArtworks addObject:scaled];
-				[scaled release];
+				compressed = compressImage([a firstArtwork]);
+				[compressedArtworks addObject:compressed];
+				[compressed release];
+				[scaledSizes addObject:scaleImageSize([a firstArtwork], itemWidth)];
 			}
 			csl = [[CSL alloc] initWithText:[a album]
 				width:itemWidth
@@ -292,15 +287,15 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 		maxArtworkHeight = 0;
 		for (j = 0; j < [line count]; j++) {
 			id obj;
-			NSImage *img;
+			NSValue *v;
 			CGFloat height;
 
 			// make the no-artwork space square
 			height = itemWidth;
-			obj = [scaledArtworks objectAtIndex:j];
+			obj = [scaledSizes objectAtIndex:j];
 			if (obj != [NSNull null]) {
-				img = (NSImage *) obj;
-				height = [img size].height;
+				v = (NSValue *) obj;
+				height = [v sizeValue].height;
 			}
 			if (maxArtworkHeight < height)
 				maxArtworkHeight = height;
@@ -338,16 +333,18 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 		for (j = 0; j < [line count]; j++) {
 			id obj;
 			NSImage *img;
+			NSValue *v;
 			NSRect r;
 
 			r.origin.x = x;
 			r.origin.y = y;
-			obj = [scaledArtworks objectAtIndex:j];
+			obj = [compressedArtworks objectAtIndex:j];
 			if (obj == [NSNull null])
 				/* TODO draw a default image here */;
 			else {
 				img = (NSImage *) obj;
-				r.size = [img size];
+				v = (NSValue *) [scaledSizes objectAtIndex:j];
+				r.size = [v sizeValue];
 				[img drawInRect:r];
 			}
 			x += itemWidth + padding;
@@ -382,7 +379,8 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 		[infoCSLs release];
 		[artistCSLs release];
 		[titleCSLs release];
-		[scaledArtworks release];
+		[scaledSizes release];
+		[compressedArtworks release];
 		[line release];
 	}
 	if (nc != nil) {
