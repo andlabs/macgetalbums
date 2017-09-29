@@ -161,7 +161,21 @@ static BOOL trackEarlierThan(iTunesTrack *a, iTunesTrack *b)
 			if (firstTrack == nil)
 				continue;
 			if (withArtwork) {
-				// TODO
+				SBElementArray *artworks;
+				iTunesArtwork *artwork;
+
+				artworks = [firstTrack artworks];
+				artwork = nil;
+				if ([artworks count] > 0)
+					artwork = (iTunesArtwork *) [artworks objectAtIndex:0];
+				if (artwork != nil) {
+					// TODO why is -[artwork data] a NSAppleEventDescriptor?
+					NSImage *img;
+
+					img = [[NSImage alloc] initWithData:[artwork rawData]];
+					[a setFirstArtwork:img];
+					[img release];
+				}
 			}
 			[a setFirstTrack:nil];
 		}
