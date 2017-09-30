@@ -265,7 +265,9 @@ int main(int argc, char *argv[])
 	}
 
 	trackCount = [tracks count];
+	// TODO this could be part of the collection stage...
 	totalDuration = findTotalDuration(tracks, timer);
+	// TODO no need to do this in -c mode
 	albumsarr = [albums allObjects];
 	if (strcmp(optSortBy, "year") == 0)
 		sortedAlbums = [albumsarr sortedArrayUsingSelector:@selector(compareForSortByYear:)];
