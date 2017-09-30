@@ -5,10 +5,13 @@ static BOOL optVerbose = NO;
 static BOOL optShowLengths = NO;
 static BOOL optShowCount = NO;
 static const char *optCollector = NULL;
+// TODO rename this variable optMinutesOnly (and Duration methods likewise)
 static BOOL optMinutes = NO;
+// TODO rename this variable optArtworkCounts
 static BOOL optArtwork = NO;
 static BOOL optPDF = NO;
 static const char *optSortBy = "year";
+// TODO reverse sort
 
 static id<Collector> tryCollector(NSString *name, Class<Collector> class, BOOL isSigned, BOOL forAlbumArtwork, Timer *timer, NSError **err)
 {
