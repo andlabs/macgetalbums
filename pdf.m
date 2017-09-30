@@ -127,6 +127,8 @@ static NSImage *compressImage(NSImage *artwork)
 	NSData *compressedData;
 
 	// If we don't do this, the PDFs can wind up with huge sizes, even with PNG!
+	// Fortunately, CGPDFContext will preserve image compression for JPEGs and PNGs if specified, allowing this to work at all (see also https://lists.apple.com/archives/quartz-dev/2004/Nov/threads.html#00030, in particular the thread starting with https://lists.apple.com/archives/quartz-dev/2004/Nov/msg00025.html).
+	// I'm fortunate NSImage operates similarly.
 	// TODO fine-tune the quality
 #define jpegQuality 0.85
 	quality = [[NSNumber alloc] initWithDouble:jpegQuality];

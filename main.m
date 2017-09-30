@@ -157,7 +157,7 @@ void usage(void)
 	fprintf(stderr, "  -l - show album lengths\n");
 	fprintf(stderr, "  -m - show times in minutes instead of hours and minutes\n");
 	fprintf(stderr, "  -o - sort by the given key (year, length, none; default is year)\n");
-	fprintf(stderr, "  -p - create a PDF gallery of albums (overrides -c)\n");
+	fprintf(stderr, "  -p - write a PDF gallery of albums to stdout (overrides -c)\n");
 	fprintf(stderr, "  -u - use the specified collector\n");
 	fprintf(stderr, "  -v - print verbose output\n");
 	// TODO prettyprint this somehow
