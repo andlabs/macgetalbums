@@ -158,7 +158,7 @@ extern void foreachCollector(NSArray *collectors, foreachCollectorFunc f, void *
 extern BOOL checkIfSigned(NSError **err);
 
 // pdf.m
-extern CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes);
+extern CFDataRef makePDF(NSArray *albums, BOOL onlyMinutes);
 
 // printlog.m
 extern void xvfprintf(FILE *f, NSString *fmt, va_list ap);

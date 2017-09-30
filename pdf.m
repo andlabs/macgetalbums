@@ -151,14 +151,13 @@ static NSValue *scaleImageSize(NSImage *artwork, CGFloat width)
 	return [NSValue valueWithSize:bsize];
 }
 
-CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
+CFDataRef makePDF(NSArray *albums, BOOL onlyMinutes)
 {
 	CFMutableDataRef data;
 	CGDataConsumerRef consumer;
 	CGRect mediaBox;
 	CGContextRef c;
 	NSGraphicsContext *nc, *prev;
-	NSArray *albumsarr;
 	NSFont *titleFont, *artistFont, *infoFont;
 	NSColor *titleColor, *artistColor, *infoColor;
 	CGFloat x, y;
@@ -179,10 +178,6 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 		CFRelease(data);
 		return NULL;
 	}
-
-	albumsarr = [albums allObjects];
-	// TODO switch to an autorelease pool
-	[albumsarr retain];
 
 	// TODO switch to an autorelease pool
 	titleFont = [NSFont boldSystemFontOfSize:12];
@@ -228,7 +223,7 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 		range.length = nPerLine;
 		if ((range.location + range.length) >= [albums count])
 			range.length = [albums count] - range.location;
-		line = [albumsarr subarrayWithRange:range];
+		line = [albums subarrayWithRange:range];
 		// TODO switch to an autorelease pool
 		[line retain];
 
@@ -396,8 +391,6 @@ CFDataRef makePDF(NSSet *albums, BOOL onlyMinutes)
 	[artistFont release];
 	[titleColor release];
 	[titleFont release];
-
-	[albumsarr release];
 
 	CGPDFContextClose(c);
 	CGContextRelease(c);

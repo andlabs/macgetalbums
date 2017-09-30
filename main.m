@@ -4,10 +4,11 @@
 static BOOL optVerbose = NO;
 static BOOL optShowLengths = NO;
 static BOOL optShowCount = NO;
-const char *optCollector = NULL;
+static const char *optCollector = NULL;
 static BOOL optMinutes = NO;
 static BOOL optArtwork = NO;
 static BOOL optPDF = NO;
+static const char *optSortBy = "year";
 
 static id<Collector> tryCollector(NSString *name, Class<Collector> class, BOOL isSigned, BOOL forAlbumArtwork, Timer *timer, NSError **err)
 {
@@ -146,12 +147,13 @@ void usage(void)
 {
 	NSArray *knownCollectors;
 
-	fprintf(stderr, "usage: %s [-achlmpv] [-u collector]\n", argv0);
+	fprintf(stderr, "usage: %s [-achlmpv] [-o key] [-u collector]\n", argv0);
 	fprintf(stderr, "  -a - show tracks that have missing or duplicate artwork (overrides -c and -p)\n");
 	fprintf(stderr, "  -c - show track and album count and total playing time and quit\n");
 	fprintf(stderr, "  -h - show this help\n");
 	fprintf(stderr, "  -l - show album lengths\n");
 	fprintf(stderr, "  -m - show times in minutes instead of hours and minutes\n");
+	fprintf(stderr, "  -o - sort by the given key (year, length, none; default is year)\n");
 	fprintf(stderr, "  -p - create a PDF gallery of albums (overrides -c)\n");
 	fprintf(stderr, "  -u - use the specified collector\n");
 	fprintf(stderr, "  -v - print verbose output\n");
@@ -171,13 +173,14 @@ int main(int argc, char *argv[])
 	NSArray *tracks;
 	NSUInteger trackCount;
 	NSSet *albums;
+	NSArray *albumsarr, *sortedAlbums;
 	Timer *timer;
 	Duration *totalDuration;
 	NSError *err;
 	int c;
 
 	argv0 = argv[0];
-	while ((c = getopt(argc, argv, ":achlmpu:v")) != -1)
+	while ((c = getopt(argc, argv, ":achlmo:pu:v")) != -1)
 		switch (c) {
 		case 'v':
 			// TODO rename to -d for debug?
@@ -200,6 +203,15 @@ int main(int argc, char *argv[])
 			break;
 		case 'p':
 			optPDF = YES;
+			break;
+		case 'o':
+			optSortBy = optarg;
+			if (strcmp(optSortBy, "year") != 0 &&
+				strcmp(optSortBy, "length") != 0 &&
+				strcmp(optSortBy, "none") != 0) {
+				fprintf(stderr, "error: unknown sort key %s\n", optSortBy);
+				usage();
+			}
 			break;
 		case '?':
 			fprintf(stderr, "error: unknown option -%c\n", optopt);
@@ -245,6 +257,7 @@ int main(int argc, char *argv[])
 	xlogtimer(@"convert tracks to our internal data structure format", timer, TimerConvert);
 
 	totalDuration = nil;
+	sortedAlbums = nil;
 
 	if (optArtwork) {
 		showArtworkCounts(tracks);
@@ -253,14 +266,22 @@ int main(int argc, char *argv[])
 
 	trackCount = [tracks count];
 	totalDuration = findTotalDuration(tracks, timer);
-	xlogtimer(@"find total duration", timer, TimerSort);
+	albumsarr = [albums allObjects];
+	if (strcmp(optSortBy, "year") == 0)
+		sortedAlbums = [albumsarr sortedArrayUsingSelector:@selector(compareForSortByYear:)];
+	else if (strcmp(optSortBy, "length") == 0)
+		sortedAlbums = [albumsarr sortedArrayUsingSelector:@selector(compareForSortByLength:)];
+	else
+		sortedAlbums = albumsarr;
+	[sortedAlbums retain];
+	xlogtimer(@"find total duration and sort albums in order", timer, TimerSort);
 
 	if (optPDF) {
 		CFDataRef data;
 		const UInt8 *buf;
 		CFIndex len;
 
-		data = makePDF(albums, optMinutes);
+		data = makePDF(sortedAlbums, optMinutes);
 		buf = CFDataGetBytePtr(data);
 		len = CFDataGetLength(data);
 		// TODO check error
@@ -284,7 +305,7 @@ int main(int argc, char *argv[])
 
 	// TODO provide a custom separator option
 	// TODO provide a custom sort option and default sort by year maybe
-	for (Album *a in albums) {
+	for (Album *a in sortedAlbums) {
 		xprintf(@"%ld\t%@\t%@",
 			(long) ([a year]),
 			[a artist],
@@ -300,10 +321,11 @@ int main(int argc, char *argv[])
 	}
 
 done:
+	if (sortedAlbums != nil)
+		[sortedAlbums release];
 	if (totalDuration != nil)
 		[totalDuration release];
-	if (albums != nil)
-		[albums release];
+	[albums release];
 	[tracks release];
 	[collector release];
 	[timer release];
