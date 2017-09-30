@@ -58,7 +58,7 @@ static void endPageContext(CGContextRef c, NSGraphicsContext *nc, NSGraphicsCont
 	CGContextRestoreGState(c);
 }
 
-// based on https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/TextLayout/Tasks/StringHeight.html#//apple_ref/doc/uid/20001809-CJBGBIBB
+// based on https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/TextLayout/Tasks/StringHeight.html#//apple_ref/doc/uid/20001809-CJBGBIBB and https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/TextLayout/Tasks/DrawingStrings.html#//apple_ref/doc/uid/20001808-SW4
 @interface CSL : NSObject {
 	NSLayoutManager *l;
 	NSTextStorage *s;
