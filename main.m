@@ -1,9 +1,11 @@
 // 8 june 2017
 #import "macgetalbums.h"
 
-// TODO find out how to properly specify a dynamic method
-@protocol OptsAccessors<NSObject>
-@optional
+@interface Opts : Options
+@end
+
+// the category avoids undefined method compiler warnings (thanks mikeash in irc.freenode.net #macdev)
+@interface Opts (Accessors)
 - (BOOL)verbose;
 - (BOOL)showLengths;
 - (BOOL)showCount;
@@ -15,9 +17,6 @@
 - (BOOL)PDF;
 - (const char *)sortBy;
 // TODO reverse sort
-@end
-
-@interface Opts : Options<OptsAccessors>
 @end
 
 @implementation Opts
