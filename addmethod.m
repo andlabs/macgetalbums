@@ -1,7 +1,11 @@
 // 30 september 2017
-// TODO availability macros
+#define MAC_OS_X_VERSION_MIN_REQUIRED MAC_OS_X_VERSION_10_0
+#define MAC_OS_X_VERSION_MAX_ALLOWED MAC_OS_X_VERSION_10_0
+#import <stdlib.h>
+#import <string.h>
 #import <mach-o/dyld.h>
-#import "options.h"
+#import <objc/runtime.h>
+#import "optpriv.h"
 
 // for more on the version 1 runtime, see http://mirror.informatimago.com/next/developer.apple.com/documentation/Cocoa/Reference/ObjCRuntimeRef/ObjCRuntimeRef.pdf
 
@@ -58,7 +62,7 @@ static BOOL (*add)(Class, SEL, IMP, const char *) = NULL;
 // thanks to gwynne in irc.freenode.net #macdev
 void getFunctions(void)
 {
-	struct mach_header *handle;
+	const struct mach_header *handle;
 	NSSymbol a, b, c;
 
 	if (getImplementation != NULL)
@@ -66,8 +70,7 @@ void getFunctions(void)
 
 	handle = _dyld_get_image_header(0);
 	if (handle == NULL)
-		[NSException raise:NSInternalInconsistencyException
-			format:@"error opening process image to find runtime functions"];
+		optThrow(@"error opening process image to find runtime functions");
 
 	a = NSLookupSymbolInImage(handle, "method_getImplementation", NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR);
 	b = NSLookupSymbolInImage(handle, "method_getTypeEncoding", NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR);
@@ -77,20 +80,17 @@ void getFunctions(void)
 		*((void **) (&getImplementation)) = NSAddressOfSymbol(a);
 		*((void **) (&getTypeEncoding)) = NSAddressOfSymbol(b);
 		*((void **) (&add)) = NSAddressOfSymbol(c);
-		dlclose(handle);
 		return;
 	}
 
 	// let's hope we have v1
 	a = NSLookupSymbolInImage(handle, "class_addMethods", NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR);
 	if (a == NULL)
-		[NSException raise:NSInternalInconsistencyException
-			format:@"could not determine which Objective-C runtime functions to use"];
+		optThrow(@"could not determine which Objective-C runtime functions to use");
 	*((void **) (&v1_class_addMethods)) = NSAddressOfSymbol(a);
 	getImplementation = v1getImplementation;
 	getTypeEncoding = v1getTypeEncoding;
 	add = v1add;
-	dlclose(handle);
 }
 
 BOOL addMethod(Class class, SEL new, SEL existing)

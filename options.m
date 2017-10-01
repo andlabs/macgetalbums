@@ -1,8 +1,20 @@
 // 30 september 2017
-// TODO availability macros
+#define MAC_OS_X_VERSION_MIN_REQUIRED MAC_OS_X_VERSION_10_0
+#define MAC_OS_X_VERSION_MAX_ALLOWED MAC_OS_X_VERSION_10_0
+// bypass badly written headers
+#define NSComparator id
+#import <Foundation/NSObject.h>
+#import <Foundation/NSString.h>
+#import <Foundation/NSDictionary.h>
+#import <Foundation/NSData.h>
+#import <Foundation/NSArray.h>
+#import <Foundation/NSException.h>
+#import <stdio.h>
+#import <stdlib.h>
+#import <string.h>
+#import <stdarg.h>
 #import "options.h"
-
-Options *options;
+#import "optpriv.h"
 
 @interface optEntry : NSObject {
 	NSString *name;
@@ -138,6 +150,24 @@ Options *options;
 }
 
 @end
+
+static void xvfprintf(FILE *f, NSString *fmt, va_list ap)
+{
+	NSString *s;
+
+	s = [[NSString alloc] initWithFormat:fmt arguments:ap];
+	fprintf(f, "%s", [s UTF8String]);
+	[s release];
+}
+
+static void xfprintf(FILE *f, NSString *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	xvfprintf(f, fmt, ap);
+	va_end(ap);
+}
 
 @implementation Options
 
@@ -357,3 +387,14 @@ Options *options;
 }
 
 @end
+
+void optThrow(NSString *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	[NSException raise:NSInternalInconsistencyException
+		format:fmt
+		arguments:ap];
+	va_end(ap);
+}

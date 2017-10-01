@@ -1,8 +1,4 @@
 // 1 october 2017
-#import <FoundationxFound>
-
-// addmethod.m
-extern BOOL addMethod(Class class, SEL new, SEL existing);
 
 // options.m
 @interface Options : NSObject {
