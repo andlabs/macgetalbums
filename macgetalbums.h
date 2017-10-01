@@ -12,9 +12,9 @@
 #import <unistd.h>
 #import <stdarg.h>
 #import <inttypes.h>
-#import <dlfcn.h>
 #import <mach/mach.h>
 #import <mach/mach_time.h>
+#import <mach-o/dyld.h>
 #import <objc/runtime.h>
 #import "iTunes.h"
 

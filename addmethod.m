@@ -53,41 +53,38 @@ static IMP (*getImplementation)(Method) = NULL;
 static const char *(*getTypeEncoding)(Method) = NULL;
 static BOOL (*add)(Class, SEL, IMP, const char *) = NULL;
 
+// thanks to gwynne in irc.freenode.net #macdev
 void getFunctions(void)
 {
-	void *handle;
-	void *a, *b, *c;
+	struct mach_header *handle;
+	NSSymbol a, b, c;
 
 	if (getImplementation != NULL)
 		return;
 
-	handle = dlopen(NULL, RTLD_LAZY);
-	if (handle == NULL) {
-		const char *err;
-
-		err = dlerror();
+	handle = _dyld_get_image_header(0);
+	if (handle == NULL)
 		[NSException raise:NSInternalInconsistencyException
-			format:@"error opening process image to find runtime functions: %s", err];
-	}
+			format:@"error opening process image to find runtime functions"];
 
-	a = dlsym(handle, "method_getImplementation");
-	b = dlsym(handle, "method_getTypeEncoding");
-	c = dlsym(handle, "class_addMethod");
+	a = NSLookupSymbolInImage(handle, "method_getImplementation", NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR);
+	b = NSLookupSymbolInImage(handle, "method_getTypeEncoding", NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR);
+	c = NSLookupSymbolInImage(handle, "class_addMethod", NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR);
 	// we must have all three for v2
 	if (a != NULL && b != NULL && c != NULL) {
-		*((void **) (&getImplementation)) = a;
-		*((void **) (&getTypeEncoding)) = b;
-		*((void **) (&add)) = c;
+		*((void **) (&getImplementation)) = NSAddressOfSymbol(a);
+		*((void **) (&getTypeEncoding)) = NSAddressOfSymbol(b);
+		*((void **) (&add)) = NSAddressOfSymbol(c);
 		dlclose(handle);
 		return;
 	}
 
 	// let's hope we have v1
-	a = dlsym(handle, "class_addMethods");
+	a = NSLookupSymbolInImage(handle, "class_addMethods", NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR);
 	if (a == NULL)
 		[NSException raise:NSInternalInconsistencyException
 			format:@"could not determine which Objective-C runtime functions to use"];
-	*((void **) (&v1_class_addMethods)) = a;
+	*((void **) (&v1_class_addMethods)) = NSAddressOfSymbol(a);
 	getImplementation = v1getImplementation;
 	getTypeEncoding = v1getTypeEncoding;
 	add = v1add;
