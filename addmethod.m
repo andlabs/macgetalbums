@@ -1,5 +1,7 @@
 // 30 september 2017
-#import "macgetalbums.h"
+// TODO availability macros
+#import <mach-o/dyld.h>
+#import "options.h"
 
 // for more on the version 1 runtime, see http://mirror.informatimago.com/next/developer.apple.com/documentation/Cocoa/Reference/ObjCRuntimeRef/ObjCRuntimeRef.pdf
 

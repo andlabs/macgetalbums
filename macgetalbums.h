@@ -14,9 +14,9 @@
 #import <inttypes.h>
 #import <mach/mach.h>
 #import <mach/mach_time.h>
-#import <mach-o/dyld.h>
 #import <objc/runtime.h>
 #import "iTunes.h"
+#import "options.h"
 
 // damn MacTypes.h already having a Duration
 #define Duration mgaDuration
@@ -160,28 +160,6 @@ extern BOOL checkIfSigned(NSError **err);
 
 // pdf.m
 extern CFDataRef makePDF(NSArray *albums, BOOL onlyMinutes);
-
-// addmethod.m
-extern BOOL addMethod(Class class, SEL new, SEL existing);
-
-// options.m
-@interface Options : NSObject {
-	const char *argv0;
-	NSMutableDictionary *options;
-	NSMutableDictionary *optsByAccessor;
-}
-- (id)initWithArgv0:(const char *)a0;
-- (const char *)argv0;
-- (BOOL)boolForAccessorImpl;
-- (void)addBoolOpt:(NSString *)name helpText:(NSString *)helpText;
-- (void)addBoolOpt:(NSString *)name helpText:(NSString *)helpText accessor:(NSString *)accessor;
-- (const char *)stringForAccessorImpl;
-- (void)addStringOpt:(NSString *)name defaultValue:(const char *)def helpText:(NSString *)helpText;
-- (void)addStringOpt:(NSString *)name defaultValue:(const char *)def helpText:(NSString *)helpText accessor:(NSString *)accessor;
-- (int)parse:(int)argc argv:(char **)argv;
-- (void)usage;
-@end
-extern Options *options;
 
 // printlog.m
 extern void xvfprintf(FILE *f, NSString *fmt, va_list ap);

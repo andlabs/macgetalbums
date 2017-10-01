@@ -20,6 +20,7 @@ MFILES = \
 
 HFILES = \
 	macgetalbums.h \
+	options.h \
 	iTunes.h
 
 OFILES = \

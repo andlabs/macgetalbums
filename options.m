@@ -1,5 +1,6 @@
 // 30 september 2017
-#import "macgetalbums.h"
+// TODO availability macros
+#import "options.h"
 
 Options *options;
 
