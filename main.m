@@ -1,7 +1,9 @@
 // 8 june 2017
 #import "macgetalbums.h"
 
-@interface Opts : Options
+// TODO find out how to properly specify a dynamic method
+@protocol OptsAccessors<NSObject>
+@optional
 - (BOOL)verbose;
 - (BOOL)showLengths;
 - (BOOL)showCount;
@@ -15,11 +17,14 @@
 // TODO reverse sort
 @end
 
+@interface Opts : Options<OptsAccessors>
+@end
+
 @implementation Opts
 
-- (id)initWithArgv0:(const char *)argv0
+- (id)initWithArgv0:(const char *)a0
 {
-	self = [super initWithArgv0:argv0];
+	self = [super initWithArgv0:a0];
 	if (self) {
 		[self addBoolOpt:@"v"
 			helpText:@"print verbose output"
@@ -179,8 +184,6 @@ static void showArtworkCounts(NSArray *tracks)
 		}
 }
 
-const char *argv0;
-
 static BOOL usagePrintCollectors(NSString *name, Class<Collector> class, void *data)
 {
 	xfprintf(stderr, @" %@\n  %@\n",
@@ -290,7 +293,7 @@ int main(int argc, char *argv[])
 		const UInt8 *buf;
 		CFIndex len;
 
-		data = makePDF(sortedAlbums, [options showMinutes]);
+		data = makePDF(sortedAlbums, [options minutes]);
 		buf = CFDataGetBytePtr(data);
 		len = CFDataGetLength(data);
 		// TODO check error
@@ -303,7 +306,7 @@ int main(int argc, char *argv[])
 	if ([options showCount]) {
 		NSString *totalstr;
 
-		totalstr = [totalDuration stringWithOnlyMinutes:[option showMinutes]];
+		totalstr = [totalDuration stringWithOnlyMinutes:[options minutes]];
 		xprintf(@"%lu tracks %lu albums %@ total time\n",
 			(unsigned long) trackCount,
 			(unsigned long) [albums count],
@@ -322,7 +325,7 @@ int main(int argc, char *argv[])
 		if ([options showLengths]) {
 			NSString *lengthstr;
 
-			lengthstr = [[a length] stringWithOnlyMinutes:[options showMinutes]];
+			lengthstr = [[a length] stringWithOnlyMinutes:[options minutes]];
 			xprintf(@"\t%@", lengthstr);
 			[lengthstr release];
 		}
