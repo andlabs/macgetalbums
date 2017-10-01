@@ -50,7 +50,7 @@
 			accessor:@"PDF"];
 		[self addStringOpt:@"o"
 			defaultValue:"year"
-			helpText:@"-o - sort by the given key (year, length, none; default is year)"
+			helpText:@"sort by the given key (year, length, none; default is year)"
 			accessor:@"sortBy"];
 	}
 	return self;
