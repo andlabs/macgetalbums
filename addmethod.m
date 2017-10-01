@@ -60,37 +60,49 @@ static const char *(*getTypeEncoding)(Method) = NULL;
 static BOOL (*add)(Class, SEL, IMP, const char *) = NULL;
 
 // thanks to gwynne in irc.freenode.net #macdev
-void getFunctions(void)
+// TODO there doesn't seem to be a way to get a mach_header from an address already in memory...
+static BOOL tryModule(unsigned long mod)
 {
 	const struct mach_header *handle;
 	NSSymbol a, b, c;
 
-	if (getImplementation != NULL)
-		return;
-
-	handle = _dyld_get_image_header(0);
+	handle = _dyld_get_image_header(mod);
 	if (handle == NULL)
-		optThrow(@"error opening process image to find runtime functions");
+		return NO;
 
-	a = NSLookupSymbolInImage(handle, "method_getImplementation", NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR);
-	b = NSLookupSymbolInImage(handle, "method_getTypeEncoding", NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR);
-	c = NSLookupSymbolInImage(handle, "class_addMethod", NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR);
+	a = NSLookupSymbolInImage(handle, "_method_getImplementation", NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR);
+	b = NSLookupSymbolInImage(handle, "_method_getTypeEncoding", NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR);
+	c = NSLookupSymbolInImage(handle, "_class_addMethod", NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR);
 	// we must have all three for v2
 	if (a != NULL && b != NULL && c != NULL) {
 		*((void **) (&getImplementation)) = NSAddressOfSymbol(a);
 		*((void **) (&getTypeEncoding)) = NSAddressOfSymbol(b);
 		*((void **) (&add)) = NSAddressOfSymbol(c);
-		return;
+		return YES;
 	}
 
 	// let's hope we have v1
-	a = NSLookupSymbolInImage(handle, "class_addMethods", NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR);
+	a = NSLookupSymbolInImage(handle, "_class_addMethods", NSLOOKUPSYMBOLINIMAGE_OPTION_RETURN_ON_ERROR);
 	if (a == NULL)
-		optThrow(@"could not determine which Objective-C runtime functions to use");
+		return NO;
 	*((void **) (&v1_class_addMethods)) = NSAddressOfSymbol(a);
 	getImplementation = v1getImplementation;
 	getTypeEncoding = v1getTypeEncoding;
 	add = v1add;
+	return YES;
+}
+
+static void getFunctions(void)
+{
+	unsigned long i, n;
+
+	if (getImplementation != NULL)
+		return;
+	n = _dyld_image_count();
+	for (i = 0; i < n; i++)
+		if (tryModule(i))
+			return;
+	optThrow(@"could not determine which Objective-C runtime functions to use");
 }
 
 BOOL addMethod(Class class, SEL new, SEL existing)
