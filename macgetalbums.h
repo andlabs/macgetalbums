@@ -162,7 +162,7 @@ extern BOOL checkIfSigned(NSError **err);
 extern CFDataRef makePDF(NSArray *albums, BOOL onlyMinutes);
 
 // addmethod.m
-extern void addMethod(Class class, SEL new, SEL existing);
+extern BOOL addMethod(Class class, SEL new, SEL existing);
 
 // options.m
 @interface Options : NSObject {

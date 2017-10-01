@@ -3,6 +3,7 @@
 OUT = macgetalbums
 
 MFILES = \
+	addmethod.m \
 	album.m \
 	collector.m \
 	duration.m \
@@ -10,6 +11,7 @@ MFILES = \
 	issigned.m \
 	ituneslibrary.m \
 	main.m \
+	options.m \
 	pdf.m \
 	printlog.m \
 	scriptingbridge.m \
