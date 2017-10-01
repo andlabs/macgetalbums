@@ -114,7 +114,7 @@ Options *options;
 
 @implementation optStringEntry
 
-- (id)initWithName:(NSString *)n defaultString:(const char *)ds helpText:(NSString *)ht;
+- (id)initWithName:(NSString *)n defaultString:(const char *)ds helpText:(NSString *)ht
 {
 	return [super initWithName:n
 		defaultValue:[NSValue valueWithPointer:ds]
@@ -192,8 +192,8 @@ Options *options;
 		helpText:helpText];
 	[self->options setObject:e forKey:name];
 
-	[self->optsByAccessor setObect:e forKey:accessor];
-	newsel = NSStringToSelector(accessor);
+	[self->optsByAccessor setObject:e forKey:accessor];
+	newsel = NSSelectorFromString(accessor);
 	isel = @selector(boolForAccessorImpl);
 	addMethod([self class], newsel, isel);
 
@@ -212,7 +212,7 @@ Options *options;
 	// TODO do we own str?
 	e = (optEntry *) [self->optsByAccessor objectForKey:str];
 	v = (NSValue *) [e value];
-	return (const char *) [n pointerValue];
+	return (const char *) [v pointerValue];
 }
 
 - (void)addStringOpt:(NSString *)name defaultValue:(const char *)def helpText:(NSString *)helpText
@@ -230,8 +230,8 @@ Options *options;
 		helpText:helpText];
 	[self->options setObject:e forKey:name];
 
-	[self->optsByAccessor setObect:e forKey:accessor];
-	newsel = NSStringToSelector(accessor);
+	[self->optsByAccessor setObject:e forKey:accessor];
+	newsel = NSSelectorFromString(accessor);
 	isel = @selector(stringForAccessorImpl);
 	addMethod([self class], newsel, isel);
 
@@ -275,7 +275,7 @@ Options *options;
 		// argh -[NSString initWithBytes:length:encoding:] was introduced in 10.3
 		optnamedata = [[NSData alloc] initWithBytes:optname
 			length:(optnameend - optname)];
-		optnamestr = [[NSString alloc] initWithData:argnamedata
+		optnamestr = [[NSString alloc] initWithData:optnamedata
 			encoding:NSUTF8StringEncoding];
 		[optnamedata release];
 
