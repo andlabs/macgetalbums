@@ -1,17 +1,59 @@
 // 8 june 2017
 #import "macgetalbums.h"
 
-static BOOL optVerbose = NO;
-static BOOL optShowLengths = NO;
-static BOOL optShowCount = NO;
-static const char *optCollector = NULL;
+@interface Opts : Options
+- (BOOL)verbose;
+- (BOOL)showLengths;
+- (BOOL)showCount;
+- (const char *)collector;
 // TODO rename this variable optMinutesOnly (and Duration methods likewise)
-static BOOL optMinutes = NO;
+- (BOOL)minutes;
 // TODO rename this variable optArtworkCounts
-static BOOL optArtwork = NO;
-static BOOL optPDF = NO;
-static const char *optSortBy = "year";
+- (BOOL)showArtwork;
+- (BOOL)PDF;
+- (const char *)sortBy;
 // TODO reverse sort
+@end
+
+@implementation Opts
+
+- (id)initWithArgv0:(const char *)argv0
+{
+	self = [super initWithArgv0:argv0];
+	if (self) {
+		[self addBoolOpt:@"v"
+			helpText:@"print verbose output"
+			accessor:@"verbose"];
+		[self addBoolOpt:@"l"
+			helpText:@"show album lengths"
+			accessor:@"showLengths"];
+		[self addBoolOpt:@"c"
+			helpText:@"show track and album count and total playing time and quit"
+			accessor:@"showCount"];
+		[self addStringOpt:@"u"
+			defaultValue:NULL
+			helpText:@"use the specified collector"
+			accessor:@"collector"];
+		[self addBoolOpt:@"m"
+			helpText:@"show times in minutes instead of hours and minutes"
+			accessor:@"minutes"];
+		[self addBoolOpt:@"a"
+			helpText:@"show tracks that have missing or duplicate artwork (overrides -c and -p)"
+			accessor:@"showArtwork"];
+		[self addBoolOpt:@"p"
+			helpText:@"write a PDF gallery of albums to stdout (overrides -c)"
+			accessor:@"PDF"];
+		[self addStringOpt:@"o"
+			defaultValue:"year"
+			helpText:@"-o - sort by the given key (year, length, none; default is year)"
+			accessor:@"sortBy"];
+	}
+	return self;
+}
+
+@end
+
+static Opts *options;
 
 static id<Collector> tryCollector(NSString *name, Class<Collector> class, BOOL isSigned, BOOL forAlbumArtwork, Timer *timer, NSError **err)
 {
@@ -76,15 +118,15 @@ static id<Collector> tryCollectors(BOOL isSigned, Timer *timer, BOOL *showUsage)
 
 	*showUsage = NO;
 	memset(&p, 0, sizeof (struct tryCollectorsParams));
-	if (optCollector != NULL) {
+	if ([options collector] != NULL) {
 		// we're trying one collector
 		// we want errors to go straight to stderr
 		// we also don't need preliminary log messages
 		p.tryingMultiple = NO;
 		p.log = xstderrprintf;
-		collectors = singleCollectorArray(optCollector);
+		collectors = singleCollectorArray([options collector]);
 		if (collectors == nil) {
-			fprintf(stderr, "error: unknown collector %s\n", optCollector);
+			fprintf(stderr, "error: unknown collector %s\n", [options collector]);
 			*showUsage = YES;
 			return nil;
 		}
@@ -94,7 +136,7 @@ static id<Collector> tryCollectors(BOOL isSigned, Timer *timer, BOOL *showUsage)
 		collectors = defaultCollectorsArray();
 	}
 	p.isSigned = isSigned;
-	p.forAlbumArtwork = optArtwork;
+	p.forAlbumArtwork = [options showArtwork];
 	p.timer = timer;
 	foreachCollector(collectors, tryCollectorsForEach, &p);
 	[collectors release];
@@ -150,16 +192,8 @@ void usage(void)
 {
 	NSArray *knownCollectors;
 
-	fprintf(stderr, "usage: %s [-achlmpv] [-o key] [-u collector]\n", argv0);
-	fprintf(stderr, "  -a - show tracks that have missing or duplicate artwork (overrides -c and -p)\n");
-	fprintf(stderr, "  -c - show track and album count and total playing time and quit\n");
-	fprintf(stderr, "  -h - show this help\n");
-	fprintf(stderr, "  -l - show album lengths\n");
-	fprintf(stderr, "  -m - show times in minutes instead of hours and minutes\n");
-	fprintf(stderr, "  -o - sort by the given key (year, length, none; default is year)\n");
-	fprintf(stderr, "  -p - write a PDF gallery of albums to stdout (overrides -c)\n");
-	fprintf(stderr, "  -u - use the specified collector\n");
-	fprintf(stderr, "  -v - print verbose output\n");
+	[options usage];
+	// TODO integrate this somehow
 	// TODO prettyprint this somehow
 	fprintf(stderr, "known collectors; without -u, each is tried in this order:\n");
 	knownCollectors = defaultCollectorsArray();
@@ -180,58 +214,26 @@ int main(int argc, char *argv[])
 	Timer *timer;
 	Duration *totalDuration;
 	NSError *err;
-	int c;
+	int optind;
 
-	argv0 = argv[0];
-	while ((c = getopt(argc, argv, ":achlmo:pu:v")) != -1)
-		switch (c) {
-		case 'v':
-			// TODO rename to -d for debug?
-			optVerbose = YES;
-			break;
-		case 'l':
-			optShowLengths = YES;
-			break;
-		case 'c':
-			optShowCount = YES;
-			break;
-		case 'u':
-			optCollector = optarg;
-			break;
-		case 'm':
-			optMinutes = YES;
-			break;
-		case 'a':
-			optArtwork = YES;
-			break;
-		case 'p':
-			optPDF = YES;
-			break;
-		case 'o':
-			optSortBy = optarg;
+	options = [[Opts alloc] initWithArgv0:argv[0]];
+	// TODO rename -v to -d for debug?
+#if 0
+	xx TODO
 			if (strcmp(optSortBy, "year") != 0 &&
 				strcmp(optSortBy, "length") != 0 &&
 				strcmp(optSortBy, "none") != 0) {
 				fprintf(stderr, "error: unknown sort key %s\n", optSortBy);
 				usage();
 			}
-			break;
-		case '?':
-			fprintf(stderr, "error: unknown option -%c\n", optopt);
-			usage();
-		case ':':
-			fprintf(stderr, "error: option -%c requires an argument\n", optopt);
-			usage();
-		case 'h':
-		default:
-			usage();
-		}
+#endif
+	optind = [options parse:argc argv:argv];
 	argc -= optind;
 	argv += optind;
 	if (argc != 0)
-		usage();
+		[options usage];
 
-	if (optVerbose)
+	if ([options verbose])
 		suppressLogs = NO;
 
 	isSigned = checkIfSigned(&err);
@@ -249,20 +251,20 @@ int main(int argc, char *argv[])
 	collector = tryCollectors(isSigned, timer, &showUsage);
 	if (collector == nil) {
 		if (showUsage)
-			usage();
+			[options usage];
 		// tryCollectors() already printed error messages; we just need to quit now
 		return 1;
 	}
 	xlogtimer(@"load iTunes library", timer, TimerLoad);
 
-	tracks = [collector collectTracksAndAlbums:&albums withArtwork:optPDF];
+	tracks = [collector collectTracksAndAlbums:&albums withArtwork:[options PDF]];
 	xlogtimer(@"collect tracks", timer, TimerCollect);
 	xlogtimer(@"convert tracks to our internal data structure format", timer, TimerConvert);
 
 	totalDuration = nil;
 	sortedAlbums = nil;
 
-	if (optArtwork) {
+	if ([options showArtwork]) {
 		showArtworkCounts(tracks);
 		goto done;
 	}
@@ -271,22 +273,24 @@ int main(int argc, char *argv[])
 	// TODO this could be part of the collection stage...
 	totalDuration = findTotalDuration(tracks, timer);
 	// TODO no need to do this in -c mode
+	// TODO allow sorting by artist
+	// TODO allow using iTunes sort keys
 	albumsarr = [albums allObjects];
-	if (strcmp(optSortBy, "year") == 0)
+	if (strcmp([options sortBy], "year") == 0)
 		sortedAlbums = [albumsarr sortedArrayUsingSelector:@selector(compareForSortByYear:)];
-	else if (strcmp(optSortBy, "length") == 0)
+	else if (strcmp([options sortBy], "length") == 0)
 		sortedAlbums = [albumsarr sortedArrayUsingSelector:@selector(compareForSortByLength:)];
 	else
 		sortedAlbums = albumsarr;
 	[sortedAlbums retain];
 	xlogtimer(@"find total duration and sort albums in order", timer, TimerSort);
 
-	if (optPDF) {
+	if ([options PDF]) {
 		CFDataRef data;
 		const UInt8 *buf;
 		CFIndex len;
 
-		data = makePDF(sortedAlbums, optMinutes);
+		data = makePDF(sortedAlbums, [options showMinutes]);
 		buf = CFDataGetBytePtr(data);
 		len = CFDataGetLength(data);
 		// TODO check error
@@ -296,10 +300,10 @@ int main(int argc, char *argv[])
 		goto done;
 	}
 
-	if (optShowCount) {
+	if ([options showCount]) {
 		NSString *totalstr;
 
-		totalstr = [totalDuration stringWithOnlyMinutes:optMinutes];
+		totalstr = [totalDuration stringWithOnlyMinutes:[option showMinutes]];
 		xprintf(@"%lu tracks %lu albums %@ total time\n",
 			(unsigned long) trackCount,
 			(unsigned long) [albums count],
@@ -315,10 +319,10 @@ int main(int argc, char *argv[])
 			(long) ([a year]),
 			[a artist],
 			[a album]);
-		if (optShowLengths) {
+		if ([options showLengths]) {
 			NSString *lengthstr;
 
-			lengthstr = [[a length] stringWithOnlyMinutes:optMinutes];
+			lengthstr = [[a length] stringWithOnlyMinutes:[options showMinutes]];
 			xprintf(@"\t%@", lengthstr);
 			[lengthstr release];
 		}
@@ -334,5 +338,6 @@ done:
 	[tracks release];
 	[collector release];
 	[timer release];
+	[options release];
 	return 0;
 }
