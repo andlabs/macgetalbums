@@ -285,7 +285,7 @@ static void registerSubclass(Class subclass)
 	return (const char *) [v pointerValue];
 }
 
-- (int)parseStringList:(const char **)list count:(int)n
+- (int)parseStringList:(char **)list count:(int)n
 {
 	const char *optname;
 	const char *optnameend;
@@ -366,7 +366,7 @@ static void registerSubclass(Class subclass)
 	return i;
 }
 
-- (int)parseArgc:(int)argc argv:(const char **)argv
+- (int)parseArgc:(int)argc argv:(char **)argv
 {
 	return [self parseStringList:(argv + 1) count:(argc - 1)] + 1;
 }

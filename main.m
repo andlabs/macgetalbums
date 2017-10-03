@@ -1,63 +1,33 @@
 // 8 june 2017
 #import "macgetalbums.h"
 
-@interface Opts : Options
+@interface Options : FlagSet
 @end
 
-// the category avoids undefined method compiler warnings (thanks mikeash in irc.freenode.net #macdev)
-@interface Opts (Accessors)
-- (BOOL)verbose;
-- (BOOL)showLengths;
-- (BOOL)showCount;
-- (const char *)collector;
+AddBoolFlag(Options, verbose,
+	@"v", @"print verbose output")
+AddBoolFlag(Options, showLengths,
+	@"l", @"show album lengths")
+AddBoolFlag(Options, showCount,
+	@"c", @"show track and album count and total playing time and quit")
+AddStringFlag(Options, collector,
+	@"u", NULL, @"use the specified collector")
 // TODO rename this variable optMinutesOnly (and Duration methods likewise)
-- (BOOL)minutes;
+AddBoolFlag(Options, minutes,
+	@"m", @"show times in minutes instead of hours and minutes")
 // TODO rename this variable optArtworkCounts
-- (BOOL)showArtwork;
-- (BOOL)PDF;
-- (const char *)sortBy;
+AddBoolFlag(Options, showArtwork,
+	@"a", @"show tracks that have missing or duplicate artwork (overrides -c and -p)")
+AddBoolFlag(Options, PDF,
+	@"p", @"write a PDF gallery of albums to stdout (overrides -c)")
+AddStringFlag(Options, sortBy,
+	@"o", "year", @"sort by the given key (year, length, none; default is year)")
 // TODO reverse sort
+
+@implementation Options
 @end
 
-@implementation Opts
-
-- (id)initWithArgv0:(const char *)a0
-{
-	self = [super initWithArgv0:a0];
-	if (self) {
-		[self addBoolOpt:@"v"
-			helpText:@"print verbose output"
-			accessor:@"verbose"];
-		[self addBoolOpt:@"l"
-			helpText:@"show album lengths"
-			accessor:@"showLengths"];
-		[self addBoolOpt:@"c"
-			helpText:@"show track and album count and total playing time and quit"
-			accessor:@"showCount"];
-		[self addStringOpt:@"u"
-			defaultValue:NULL
-			helpText:@"use the specified collector"
-			accessor:@"collector"];
-		[self addBoolOpt:@"m"
-			helpText:@"show times in minutes instead of hours and minutes"
-			accessor:@"minutes"];
-		[self addBoolOpt:@"a"
-			helpText:@"show tracks that have missing or duplicate artwork (overrides -c and -p)"
-			accessor:@"showArtwork"];
-		[self addBoolOpt:@"p"
-			helpText:@"write a PDF gallery of albums to stdout (overrides -c)"
-			accessor:@"PDF"];
-		[self addStringOpt:@"o"
-			defaultValue:"year"
-			helpText:@"sort by the given key (year, length, none; default is year)"
-			accessor:@"sortBy"];
-	}
-	return self;
-}
-
-@end
-
-static Opts *options;
+static Options *options;
 
 static id<Collector> tryCollector(NSString *name, Class<Collector> class, BOOL isSigned, BOOL forAlbumArtwork, Timer *timer, NSError **err)
 {
@@ -218,7 +188,7 @@ int main(int argc, char *argv[])
 	NSError *err;
 	int optind;
 
-	options = [[Opts alloc] initWithArgv0:argv[0]];
+	options = [[Options alloc] initWithArgv0:argv[0]];
 	// TODO rename -v to -d for debug?
 #if 0
 	xx TODO
@@ -229,7 +199,7 @@ int main(int argc, char *argv[])
 				usage();
 			}
 #endif
-	optind = [options parse:argc argv:argv];
+	optind = [options parseArgc:argc argv:argv];
 	argc -= optind;
 	argv += optind;
 	if (argc != 0)

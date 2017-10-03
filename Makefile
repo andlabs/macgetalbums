@@ -18,7 +18,7 @@ MFILES = \
 	track.m
 
 HFILES = \
-	flag.m \
+	flag.h \
 	macgetalbums.h \
 	iTunes.h
 

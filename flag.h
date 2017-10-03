@@ -17,11 +17,12 @@
 - (const char *)valueOfStringFlag:(NSString *)name;
 
 // Returns the number of entries of list processed; you can add that to list and subtract it from n to get the non-flag arguments.
-- (int)parseStringList:(const char **)list count:(int)n;
+// TODO const-correct this properly; "const char **" isn't enough (throws a warning) but isn't it usually const char *argv[] or const char **argv in main()?
+- (int)parseStringList:(char **)list count:(int)n;
 // Equivalent to [self parseStringList:(argv + 1) count:(argc - 1)] + 1.
 // Use this on the initial argc/argv passed to main().
 // Note that this does not change argv0; use -initWithArgv0: instead.
-- (int)parseArgc:(int)argc argv:(const char **)argv;
+- (int)parseArgc:(int)argc argv:(char **)argv;
 
 + (void)usage:(const char *)argv0;
 // Equivalent to [[self class] usage:[self argv0]]; provided for convenience.
