@@ -22,7 +22,8 @@ AddBoolFlag(Options, PDF, @"p", @"write a PDF gallery of albums to stdout (overr
 static NSString *availableSortList(void);
 AddStringFlag(Options, sortBy,
 	@"o", "year", ([NSString stringWithFormat:@"sort by the given key (%@; default is year)", availableSortList()]))
-// TODO reverse sort
+AddBoolFlag(Options, reverseSort,
+	@"r", @"reverse sort order")
 
 static BOOL usagePrintCollectors(NSString *name, Class<Collector> class, void *data)
 {
@@ -313,6 +314,15 @@ int main(int argc, char *argv[])
 	// TODO allow using iTunes sort keys
 	albumsarr = [albums allObjects];
 	sortedAlbums = (*sf)(albumsarr);
+	if ([options reverseSort]) {
+		NSArray *reversed;
+
+		// TODO manage memory for the enumerator properly
+		reversed = [[sortedAlbums reverseObjectEnumerator] allObjects];
+		[reversed retain];
+		[sortedAlbums release];
+		sortedAlbums = reversed;
+	}
 	xlogtimer(@"find total duration and sort albums in order", timer, TimerSort);
 
 	if ([options PDF]) {
