@@ -6,17 +6,13 @@
 #import <stdarg.h>
 #import "flag.h"
 
-// map[Class]map[string]flag
-static NSMutableDictionary *flags = nil;
-static NSMutableSet *finished = nil;
-
 @interface flag : NSObject {
-	const char *name;
+	NSString *name;
 	NSValue *defaultValue;
 	NSString *helpText;
 }
-- (id)initWithName:(const char *)n defaultValue:(NSValue *)dv helpText:(NSString *)ht;
-- (const char *)name;
+- (id)initWithName:(NSString *)n defaultValue:(NSValue *)dv helpText:(NSString *)ht;
+- (NSString *)name;
 - (NSValue *)defaultValue;
 - (NSString *)helpText;
 - (BOOL)takesArgument;
@@ -78,6 +74,7 @@ static NSMutableSet *finished = nil;
 - (NSValue *)valueWithArgument:(const char *)arg
 {
 	[self doesNotRecognizeSelector:_cmd];
+	return nil;
 }
 
 @end
@@ -137,6 +134,37 @@ static NSMutableSet *finished = nil;
 
 @end
 
+// TODO see if we can get rid of this
+static void xfprintf(FILE *f, NSString *fmt, ...)
+{
+	NSString *msg;
+	va_list ap;
+
+	va_start(ap, fmt);
+	msg = [[NSString alloc] initWithFormat:fmt arguments:ap];
+	fprintf(f, "%s", [msg UTF8String]);
+	[msg release];
+	va_end(ap);
+}
+
+// map[Class]map[string]flag
+static NSMutableDictionary *flags = nil;
+static NSMutableSet *finished = nil;
+
+// subclasses don't call the superclass's +load, so we have to do this on each call to one of the +addFlag methods
+static void registerSubclass(Class subclass)
+{
+	NSMutableDictionary *m;
+
+	m = (NSMutableDictionary *) [flags objectForKey:subclass];
+	if (m == nil) {
+		m = [NSMutableDictionary new];
+		// the cast is necessary because of more miswritten header files! yay!
+		[flags setObject:m forKey:((id<NSCopying>) subclass)];
+		[m release];
+	}
+}
+
 // TODO this is the same exception thrown by -doesNotRecognizeSelector: but that isn't a class method?
 #define mustSubclass() \
 	if ([self class] == [FlagSet class]) \
@@ -147,20 +175,10 @@ static NSMutableSet *finished = nil;
 
 + (void)load
 {
-	NSMutableDictionary *m;
-
 	if (flags == nil)
 		flags = [NSMutableDictionary new];
 	if (finished == nil)
 		finished = [NSMutableSet new];
-	if (self == [FlagSet class])
-		return;
-	m = (NSMutableDictionary *) [flags objectForKey:self];
-	if (m == nil) {
-		m = [NSMutableDictionary new];
-		[flags setObject:m forKey:self];
-		[m release];
-	}
 }
 
 - (id)init
@@ -222,6 +240,7 @@ static NSMutableSet *finished = nil;
 
 	mustSubclass();
 	mustNotBeFinished();
+	registerSubclass(self);
 	cf = (NSMutableDictionary *) [flags objectForKey:self];
 	mustBeUnique(cf, name);
 	f = [[boolFlag alloc] initWithName:name
@@ -240,13 +259,14 @@ static NSMutableSet *finished = nil;
 	return [n boolValue];
 }
 
-+ (void)addStringFlag:(NSString *)name defaultValue:(const char *)def helpText:(NSString *)helpText
++ (void)addStringFlag:(NSString *)name defaultValue:(const char *)defaultValue helpText:(NSString *)helpText
 {
 	NSMutableDictionary *cf;
 	stringFlag *f;
 
 	mustSubclass();
 	mustNotBeFinished();
+	registerSubclass(self);
 	cf = (NSMutableDictionary *) [flags objectForKey:self];
 	mustBeUnique(cf, name);
 	f = [[stringFlag alloc] initWithName:name
@@ -262,7 +282,7 @@ static NSMutableSet *finished = nil;
 
 	v = (NSValue *) [self->flagValues objectForKey:name];
 	mustExist(name, v);
-	return (const char *) [n pointerValue];
+	return (const char *) [v pointerValue];
 }
 
 - (int)parseStringList:(const char **)list count:(int)n
@@ -330,11 +350,11 @@ static NSMutableSet *finished = nil;
 		// consume the next argument as the option's argument if needed
 		if (optarg == NULL && [f takesArgument]) {
 			i++;
-			if (i == argc) {
+			if (i == n) {
 				xfprintf(stderr, @"error: option -%@ requires an argument\n", optnamestr);
 				[self usage];
 			}
-			optarg = argv[i];
+			optarg = list[i];
 		}
 
 		[self->flagValues setObject:[f valueWithArgument:optarg]
@@ -351,11 +371,11 @@ static NSMutableSet *finished = nil;
 	return [self parseStringList:(argv + 1) count:(argc - 1)] + 1;
 }
 
-+ (void)usage
++ (void)usage:(const char *)argv0
 {
 	NSString *str;
 
-	str = [self copyUsageText];
+	str = [self copyUsageText:argv0];
 	fprintf(stderr, "%s", [str UTF8String]);
 	[str release];
 	exit(1);
@@ -363,18 +383,19 @@ static NSMutableSet *finished = nil;
 
 - (void)usage
 {
-	[[self class] usage];
+	[[self class] usage:[self argv0]];
 }
 
-+ (NSString *)copyUsageText
+// TODO should this finalize options?
++ (NSString *)copyUsageText:(const char *)argv0
 {
 	NSMutableString *ret;
 	NSDictionary *cf;
 	NSArray *sortedFlags;
-	flag *f, *helpEntry;
+	flag *f, *helpFlag;
 	NSString *trailing;
 
-	ret = [[NSMutableString alloc] initWithFormat:@"usage: %s [options]\n", self->argv0];
+	ret = [[NSMutableString alloc] initWithFormat:@"usage: %s [options]\n", argv0];
 
 	cf = (NSDictionary *) [flags objectForKey:self];
 	@autoreleasepool {
@@ -389,7 +410,7 @@ static NSMutableSet *finished = nil;
 		helpText:@"show this help and quit"];
 
 	for (NSString *name in sortedFlags) {
-		f = (flag *) [self->options objectForKey:name];
+		f = (flag *) [cf objectForKey:name];
 		if (f == nil)
 			f = helpFlag;
 

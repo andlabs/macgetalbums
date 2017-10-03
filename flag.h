@@ -13,7 +13,7 @@
 // Use the AddFlag() macros below to wrap calls to these around selectors.
 + (void)addBoolFlag:(NSString *)name defaultValue:(BOOL)defaultValue helpText:(NSString *)helpText;
 - (BOOL)valueOfBoolFlag:(NSString *)name;
-+ (void)addStringFlag:(NSString *)name defaultValue:(const char *)def helpText:(NSString *)helpText;
++ (void)addStringFlag:(NSString *)name defaultValue:(const char *)defaultValue helpText:(NSString *)helpText;
 - (const char *)valueOfStringFlag:(NSString *)name;
 
 // Returns the number of entries of list processed; you can add that to list and subtract it from n to get the non-flag arguments.
@@ -23,13 +23,13 @@
 // Note that this does not change argv0; use -initWithArgv0: instead.
 - (int)parseArgc:(int)argc argv:(const char **)argv;
 
-+ (void)usage;
-// Equivalent to [[self class] usage]; provided for convenience.
++ (void)usage:(const char *)argv0;
+// Equivalent to [[self class] usage:[self argv0]]; provided for convenience.
 - (void)usage;
 // This will always end with a newline.
-+ (NSString *)copyUsageText;
++ (NSString *)copyUsageText:(const char *)argv0;
 // Override this to add custom text after the standard text.
-// If non-nil, it should end with a newline; if not, -copyUsageText will add one.
+// If non-nil, it should end with a newline; if not, +copyUsageText: will add one.
 + (NSString *)copyUsageTrailingLines;
 @end
 
