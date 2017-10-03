@@ -24,7 +24,31 @@ AddStringFlag(Options, sortBy,
 	@"o", "year", @"sort by the given key (year, length, none; default is year)")
 // TODO reverse sort
 
+static BOOL usagePrintCollectors(NSString *name, Class<Collector> class, void *data)
+{
+	NSMutableString *str = (NSMutableString *) data;
+
+	[str appendFormat:@" %@\n  %@\n",
+		name, [class collectorDescription]];
+	return NO;
+}
+
 @implementation Options
+
++ (NSString *)copyUsageTrailingLines
+{
+	NSMutableString *ret;
+	NSArray *knownCollectors;
+
+	ret = [NSMutableString new];
+	// TODO prettyprint this somehow
+	[ret appendString:@"known collectors; without -u, each is tried in this order:\n"];
+	knownCollectors = defaultCollectorsArray();
+	foreachCollector(knownCollectors, usagePrintCollectors, ret);
+	[knownCollectors release];
+	return ret;
+}
+
 @end
 
 static Options *options;
@@ -151,27 +175,6 @@ static void showArtworkCounts(NSArray *tracks)
 				f);
 			[f release];
 		}
-}
-
-static BOOL usagePrintCollectors(NSString *name, Class<Collector> class, void *data)
-{
-	xfprintf(stderr, @" %@\n  %@\n",
-		name, [class collectorDescription]);
-	return NO;
-}
-
-void usage(void)
-{
-	NSArray *knownCollectors;
-
-	[options usage];
-	// TODO integrate this somehow
-	// TODO prettyprint this somehow
-	fprintf(stderr, "known collectors; without -u, each is tried in this order:\n");
-	knownCollectors = defaultCollectorsArray();
-	foreachCollector(knownCollectors, usagePrintCollectors, NULL);
-	[knownCollectors release];
-	exit(1);
 }
 
 int main(int argc, char *argv[])
