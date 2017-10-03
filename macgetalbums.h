@@ -5,6 +5,7 @@
 #import <AppKit/AppKit.h>
 #import <ScriptingBridge/ScriptingBridge.h>
 #import <Security/Security.h>
+#import <stdint.h>
 #import <stdio.h>
 #import <stdlib.h>
 #import <string.h>
@@ -12,6 +13,7 @@
 #import <unistd.h>
 #import <stdarg.h>
 #import <inttypes.h>
+#import <regex.h>
 #import <mach/mach.h>
 #import <mach/mach_time.h>
 #import "iTunes.h"

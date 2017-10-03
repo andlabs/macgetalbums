@@ -24,6 +24,11 @@ AddStringFlag(Options, sortBy,
 	@"o", "year", ([NSString stringWithFormat:@"sort by the given key (%@; default is year)", availableSortList()]))
 AddBoolFlag(Options, reverseSort,
 	@"r", @"reverse sort order")
+// TODO excludeArtistRegexp with name -xa
+AddStringFlag(Options, excludeAlbumsRegexp,
+	@"xb", NULL, @"if specified, exclude albums whose names match the given regexp")
+// TODO case-insensitive regexp match
+// TODO how should these regex options affect -c?
 
 static BOOL usagePrintCollectors(NSString *name, Class<Collector> class, void *data)
 {
@@ -262,6 +267,7 @@ int main(int argc, char *argv[])
 	NSSet *albums;
 	NSArray *albumsarr, *sortedAlbums;
 	sortFunc sf;
+	regex_t excludeAlbumsRegexp;
 	Timer *timer;
 	Duration *totalDuration;
 	NSError *err;
@@ -278,6 +284,26 @@ int main(int argc, char *argv[])
 	if (sf == NULL) {
 		fprintf(stderr, "error: unknown sort key %s\n", [options sortBy]);
 		[options usage];
+	}
+	if ([options excludeAlbumsRegexp] != NULL) {
+		int err;
+
+		err = regcomp(&excludeAlbumsRegexp,
+			[options excludeAlbumsRegexp],
+			REG_EXTENDED | REG_NOSUB);
+		if (err != 0) {
+			char *msg;
+			size_t len;
+
+			len = regerror(err, &excludeAlbumsRegexp,
+				NULL, 0);
+			msg = (char *) malloc(len * sizeof (char));
+			// TODO check errors
+			regerror(err, &excludeAlbumsRegexp, msg, len);
+			fprintf(stderr, "error parsing -xb regexp %s: %s\n", [options excludeAlbumsRegexp], msg);
+			free(msg);
+			[options usage];
+		}
 	}
 
 	if ([options verbose])
@@ -332,6 +358,30 @@ int main(int argc, char *argv[])
 		[sortedAlbums release];
 		sortedAlbums = reversed;
 	}
+	if ([options excludeAlbumsRegexp] != NULL) {
+		NSMutableArray *filtered;
+
+		filtered = [[NSMutableArray alloc] initWithCapacity:[sortedAlbums count]];
+		for (Album *a in sortedAlbums) {
+			int err;
+
+			err = regexec(&excludeAlbumsRegexp, [[a album] UTF8String],
+				0, NULL, 0);
+			switch (err) {
+			case 0:
+NSLog(@"excluding %@ - %@", [a artist], [a album]);
+				break;
+			case REG_NOMATCH:
+				[filtered addObject:a];
+				break;
+			default:
+				// TODO
+				abort();
+			}
+		}
+		[sortedAlbums release];
+		sortedAlbums = filtered;
+	}
 	xlogtimer(@"find total duration and sort albums in order", timer, TimerSort);
 
 	if ([options PDF]) {
@@ -379,6 +429,8 @@ int main(int argc, char *argv[])
 	}
 
 done:
+	if ([options excludeAlbumsRegexp] != NULL)
+		regfree(&excludeAlbumsRegexp);
 	if (sortedAlbums != nil)
 		[sortedAlbums release];
 	if (totalDuration != nil)
