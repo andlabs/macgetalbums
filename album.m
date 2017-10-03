@@ -112,19 +112,24 @@ NSString *const compilationArtist = @"(compilation)";
 		[self->firstArtwork retain];
 }
 
-// note that these two operate like prepare.sh
-- (NSComparisonResult)compareForSortByYear:(Album *)b
+// note that these three operate like prepare.sh
+- (NSComparisonResult)compareForSortByArtist:(Album *)b
 {
 	NSComparisonResult r;
 
-	if (self->year < b->year)
-		return NSOrderedAscending;
-	if (self->year > b->year)
-		return NSOrderedDescending;
 	r = [self->artist compare:b->artist];
 	if (r != NSOrderedSame)
 		return r;
 	return [self->album compare:b->album];
+}
+
+- (NSComparisonResult)compareForSortByYear:(Album *)b
+{
+	if (self->year < b->year)
+		return NSOrderedAscending;
+	if (self->year > b->year)
+		return NSOrderedDescending;
+	return [self compareForSortByArtist:b];
 }
 
 - (NSComparisonResult)compareForSortByLength:(Album *)b

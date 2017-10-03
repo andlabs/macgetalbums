@@ -180,6 +180,15 @@ static void showArtworkCounts(NSArray *tracks)
 
 typedef NSArray *(*sortFunc)(NSArray *albums);
 
+static NSArray *sortByArtist(NSArray *albums)
+{
+	NSArray *new;
+
+	new = [albums sortedArrayUsingSelector:@selector(compareForSortByArtist:)];
+	[new retain];
+	return new;
+}
+
 static NSArray *sortByYear(NSArray *albums)
 {
 	NSArray *new;
@@ -210,6 +219,7 @@ struct availableSort {
 };
 
 static const struct availableSort availableSorts[] = {
+	{ "artist", sortByArtist },
 	{ "year", sortByYear },
 	{ "length", sortByLength },
 	{ "none", noSort },
@@ -310,7 +320,6 @@ int main(int argc, char *argv[])
 	// TODO this could be part of the collection stage...
 	totalDuration = findTotalDuration(tracks, timer);
 	// TODO no need to do this in -c mode
-	// TODO allow sorting by artist
 	// TODO allow using iTunes sort keys
 	albumsarr = [albums allObjects];
 	sortedAlbums = (*sf)(albumsarr);

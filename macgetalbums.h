@@ -123,6 +123,7 @@ extern NSString *const compilationArtist;
 - (void)setFirstTrack:(id<NSObject>)ft;
 - (NSImage *)firstArtwork;
 - (void)setFirstArtwork:(NSImage *)a;
+- (NSComparisonResult)compareForSortByArtist:(Album *)b;
 - (NSComparisonResult)compareForSortByYear:(Album *)b;
 - (NSComparisonResult)compareForSortByLength:(Album *)b;
 @end
