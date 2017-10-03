@@ -15,7 +15,7 @@
 #import <mach/mach.h>
 #import <mach/mach_time.h>
 #import "iTunes.h"
-#import "options.h"
+#import "flag.h"
 
 // damn MacTypes.h already having a Duration
 #define Duration mgaDuration

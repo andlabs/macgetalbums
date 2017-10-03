@@ -3,15 +3,14 @@
 OUT = macgetalbums
 
 MFILES = \
-	addmethod.m \
 	album.m \
 	collector.m \
 	duration.m \
 	errors.m \
+	flag.m \
 	issigned.m \
 	ituneslibrary.m \
 	main.m \
-	options.m \
 	pdf.m \
 	printlog.m \
 	scriptingbridge.m \
@@ -19,9 +18,8 @@ MFILES = \
 	track.m
 
 HFILES = \
+	flag.m \
 	macgetalbums.h \
-	options.h \
-	optpriv.h \
 	iTunes.h
 
 OFILES = \
@@ -32,9 +30,6 @@ MFLAGS = \
 	--std=c99 -g \
 	-Wall -Wextra -pedantic \
 	-Wno-unused-parameter -Wno-four-char-constants
-
-OPTMFLAGS = \
-	-mmacosx-version-min=10.0
 
 LDFLAGS = \
 	--std=c99 -g \
@@ -55,12 +50,6 @@ $(OUT): $(OFILES)
 
 %.o: %.m $(HFILES)
 	clang -c -o $@ $< $(MFLAGS)
-
-addmethod.o: addmethod.m options.h optpriv.h
-	clang -c -o $@ $< $(MFLAGS) $(OPTMFLAGS)
-
-options.o: options.m options.h optpriv.h
-	clang -c -o $@ $< $(MFLAGS) $(OPTMFLAGS)
 
 iTunes.h:
 	sdef /Applications/iTunes.app | sdp -fh --basename iTunes
