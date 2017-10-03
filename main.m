@@ -18,10 +18,10 @@ AddBoolFlag(Options, minutes,
 // TODO rename this variable optArtworkCounts
 AddBoolFlag(Options, showArtwork,
 	@"a", @"show tracks that have missing or duplicate artwork (overrides -c and -p)")
-AddBoolFlag(Options, PDF,
-	@"p", @"write a PDF gallery of albums to stdout (overrides -c)")
+AddBoolFlag(Options, PDF, @"p", @"write a PDF gallery of albums to stdout (overrides -c)")
+static NSString *availableSortList(void);
 AddStringFlag(Options, sortBy,
-	@"o", "year", @"sort by the given key (year, length, none; default is year)")
+	@"o", "year", ([NSString stringWithFormat:@"sort by the given key (%@; default is year)", availableSortList()]))
 // TODO reverse sort
 
 static BOOL usagePrintCollectors(NSString *name, Class<Collector> class, void *data)
@@ -177,6 +177,70 @@ static void showArtworkCounts(NSArray *tracks)
 		}
 }
 
+typedef NSArray *(*sortFunc)(NSArray *albums);
+
+static NSArray *sortByYear(NSArray *albums)
+{
+	NSArray *new;
+
+	new = [albums sortedArrayUsingSelector:@selector(compareForSortByYear:)];
+	[new retain];
+	return new;
+}
+
+static NSArray *sortByLength(NSArray *albums)
+{
+	NSArray *new;
+
+	new = [albums sortedArrayUsingSelector:@selector(compareForSortByLength:)];
+	[new retain];
+	return new;
+}
+
+static NSArray *noSort(NSArray *albums)
+{
+	[albums retain];
+	return albums;
+}
+
+struct availableSort {
+	const char *name;
+	sortFunc func;
+};
+
+static const struct availableSort availableSorts[] = {
+	{ "year", sortByYear },
+	{ "length", sortByLength },
+	{ "none", noSort },
+	{ NULL, NULL },
+};
+
+static NSMutableString *asl = nil;
+
+NSString *availableSortList(void)
+{
+	const struct availableSort *s;
+
+	if (asl == nil) {
+		asl = [NSMutableString new];
+		s = availableSorts;
+		[asl appendFormat:@"%s", s->name];
+		for (s++; s->name != NULL; s++)
+			[asl appendFormat:@", %s", s->name];
+	}
+	return asl;
+}
+
+sortFunc sortFuncFor(const char *name)
+{
+	const struct availableSort *s;
+
+	for (s = availableSorts; s->name != NULL; s++)
+		if (strcmp(s->name, name) == 0)
+			return s->func;
+	return NULL;
+}
+
 int main(int argc, char *argv[])
 {
 	BOOL isSigned;
@@ -186,6 +250,7 @@ int main(int argc, char *argv[])
 	NSUInteger trackCount;
 	NSSet *albums;
 	NSArray *albumsarr, *sortedAlbums;
+	sortFunc sf;
 	Timer *timer;
 	Duration *totalDuration;
 	NSError *err;
@@ -193,20 +258,16 @@ int main(int argc, char *argv[])
 
 	options = [[Options alloc] initWithArgv0:argv[0]];
 	// TODO rename -v to -d for debug?
-#if 0
-	xx TODO
-			if (strcmp(optSortBy, "year") != 0 &&
-				strcmp(optSortBy, "length") != 0 &&
-				strcmp(optSortBy, "none") != 0) {
-				fprintf(stderr, "error: unknown sort key %s\n", optSortBy);
-				usage();
-			}
-#endif
 	optind = [options parseArgc:argc argv:argv];
 	argc -= optind;
 	argv += optind;
 	if (argc != 0)
 		[options usage];
+	sf = sortFuncFor([options sortBy]);
+	if (sf == NULL) {
+		fprintf(stderr, "error: unknown sort key %s\n", [options sortBy]);
+		[options usage];
+	}
 
 	if ([options verbose])
 		suppressLogs = NO;
@@ -251,13 +312,7 @@ int main(int argc, char *argv[])
 	// TODO allow sorting by artist
 	// TODO allow using iTunes sort keys
 	albumsarr = [albums allObjects];
-	if (strcmp([options sortBy], "year") == 0)
-		sortedAlbums = [albumsarr sortedArrayUsingSelector:@selector(compareForSortByYear:)];
-	else if (strcmp([options sortBy], "length") == 0)
-		sortedAlbums = [albumsarr sortedArrayUsingSelector:@selector(compareForSortByLength:)];
-	else
-		sortedAlbums = albumsarr;
-	[sortedAlbums retain];
+	sortedAlbums = (*sf)(albumsarr);
 	xlogtimer(@"find total duration and sort albums in order", timer, TimerSort);
 
 	if ([options PDF]) {
