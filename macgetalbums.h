@@ -133,6 +133,16 @@ extern NSString *const compilationArtist;
 extern Album *albumInSet(NSMutableSet *albums, NSString *artist, NSString *album);
 
 // collector.m
+@interface Collection : NSObject {
+	NSArray *tracks;
+	NSSet *albums;
+	Duration *totalDuration;
+}
+- (id)initWithTracks:(NSArray *)t albums:(NSSet *)a totalDuration:(Duration *)d;
+- (NSArray *)tracks;
+- (NSSet *)albums;
+- (Duration *)totalDuration;
+@end
 @protocol Collector<NSObject>
 // apparently this isn't in the NSObject protocol, but we need it
 + (instancetype)alloc;

@@ -1,6 +1,47 @@
 // 23 september 2017
 #import "macgetalbums.h"
 
+@implementation Collection
+
+- (id)initWithTracks:(NSArray *)t albums:(NSSet *)a totalDuration:(Duration *)d
+{
+	self = [super init];
+	if (self) {
+		self->tracks = t;
+		[self->tracks retain];
+		self->albums = a;
+		[self->albums retain];
+		self->totalDuration = d;
+		[self->totalDuration retain];
+	}
+	return self;
+}
+
+- (void)dealloc
+{
+	[self->totalDuration release];
+	[self->albums release];
+	[self->tracks release];
+	[super dealloc];
+}
+
+- (NSArray *)tracks
+{
+	return self->tracks;
+}
+
+- (NSSet *)albums
+{
+	return self->albums;
+}
+
+- (Duration *)totalDuration
+{
+	return self->totalDuration;
+}
+
+@end
+
 NSArray *defaultCollectorsArray(void)
 {
 	NSArray *arr;
