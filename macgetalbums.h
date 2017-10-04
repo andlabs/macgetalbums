@@ -163,6 +163,18 @@ extern BOOL checkIfSigned(NSError **err);
 // pdf.m
 extern CFDataRef makePDF(NSArray *albums, BOOL onlyMinutes);
 
+// regexp.m
+// the code is the return from regcomp() and the localized description is already formatted with regerror(); there's currently no way to get preg out (TODO?)
+extern NSString *const RegexpErrDomain;
+@interface Regexp : NSObject {
+	regex_t preg;
+	BOOL valid;
+}
+// you own the returned error
+- (id)initWithRegexp:(const char *)re caseInsensitive:(BOOL)caseInsensitive error:(NSError **)err;
+- (BOOL)matches:(NSString *)str;
+@end
+
 // printlog.m
 extern void xvfprintf(FILE *f, NSString *fmt, va_list ap);
 extern void xfprintf(FILE *f, NSString *fmt, ...);

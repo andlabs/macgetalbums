@@ -44,8 +44,8 @@ NSError *makeError(NSInteger errcode, ...)
 		desc = [desc initWithFormat:@"(unknown error code %ld)", (long) errcode];
 	}
 	va_end(ap);
-	keys[0] = NSLocalizedDescriptionKey;
-	values[0] = desc;
+	keys[n] = NSLocalizedDescriptionKey;
+	values[n] = desc;
 	n++;
 
 	userInfo = [[NSDictionary alloc] initWithObjects:values

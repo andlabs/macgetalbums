@@ -13,6 +13,7 @@ MFILES = \
 	main.m \
 	pdf.m \
 	printlog.m \
+	regexp.m \
 	scriptingbridge.m \
 	timer.m \
 	track.m
