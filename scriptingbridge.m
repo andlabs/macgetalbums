@@ -187,7 +187,7 @@ static BOOL trackEarlierThan(iTunesTrack *a, iTunesTrack *b)
 		[self->timer end];
 	}
 
-	ret = [[Collector alloc] initWithTracks:tracksOut
+	ret = [[Collection alloc] initWithTracks:tracksOut
 		albums:albumsOut
 		totalDuration:totalDuration];
 	[totalDuration release];

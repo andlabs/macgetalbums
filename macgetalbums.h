@@ -21,6 +21,8 @@
 
 // damn MacTypes.h already having a Duration
 #define Duration mgaDuration
+// oh come on, CarbonCore.framework took this name too!
+#define Collection mgaCollection
 
 // timer.m
 enum {

@@ -154,21 +154,6 @@ static id<Collector> tryCollectors(BOOL isSigned, Timer *timer, BOOL *showUsage)
 	return p.collector;
 }
 
-// you own the returned duration
-// TODO this isn't really needed anymore... nor is the timer... (it used to sort tracks into albums but that's now part of the collection phase)
-// TODO will adding the album durations give the same result?
-static Duration *findTotalDuration(NSArray *tracks, Timer *timer)
-{
-	Duration *totalDuration;
-
-	totalDuration = [[Duration alloc] initWithMilliseconds:0];
-	[timer start:TimerSort];
-	for (Track *t in tracks)
-		[totalDuration add:[t length]];
-	[timer end];
-	return totalDuration;
-}
-
 static void showArtworkCounts(NSArray *tracks)
 {
 	for (Track *track in tracks)
@@ -262,14 +247,11 @@ int main(int argc, char *argv[])
 	BOOL isSigned;
 	BOOL showUsage;
 	id<Collector> collector;
-	NSArray *tracks;
-	NSUInteger trackCount;
-	NSSet *albums;
+	Collection *c;
 	NSArray *albumsarr, *sortedAlbums;
 	sortFunc sf;
 	Regexp *excludeAlbums;
 	Timer *timer;
-	Duration *totalDuration;
 	NSError *err;
 	int optind;
 
@@ -321,24 +303,21 @@ int main(int argc, char *argv[])
 	}
 	xlogtimer(@"load iTunes library", timer, TimerLoad);
 
-	tracks = [collector collectTracksAndAlbums:&albums withArtwork:[options PDF]];
+	c = [collector collectTracksAndAlbumsWithArtwork:[options PDF]];
 	xlogtimer(@"collect tracks", timer, TimerCollect);
 	xlogtimer(@"convert tracks to our internal data structure format", timer, TimerConvert);
 
-	totalDuration = nil;
 	sortedAlbums = nil;
 
 	if ([options showArtwork]) {
-		showArtworkCounts(tracks);
+		showArtworkCounts([c tracks]);
 		goto done;
 	}
 
-	trackCount = [tracks count];
-	// TODO this could be part of the collection stage...
-	totalDuration = findTotalDuration(tracks, timer);
+	[timer start:TimerSort];
 	// TODO no need to do this in -c mode
 	// TODO allow using iTunes sort keys
-	albumsarr = [albums allObjects];
+	albumsarr = [[c albums] allObjects];
 	sortedAlbums = (*sf)(albumsarr);
 	if ([options reverseSort]) {
 		NSArray *reversed;
@@ -359,7 +338,8 @@ int main(int argc, char *argv[])
 		[sortedAlbums release];
 		sortedAlbums = filtered;
 	}
-	xlogtimer(@"find total duration and sort albums in order", timer, TimerSort);
+	[timer end];
+	xlogtimer(@"sort and filter albums", timer, TimerSort);
 
 	if ([options PDF]) {
 		CFDataRef data;
@@ -379,10 +359,10 @@ int main(int argc, char *argv[])
 	if ([options showCount]) {
 		NSString *totalstr;
 
-		totalstr = [totalDuration stringWithOnlyMinutes:[options minutes]];
+		totalstr = [[c totalDuration] stringWithOnlyMinutes:[options minutes]];
 		xprintf(@"%lu tracks %lu albums %@ total time\n",
-			(unsigned long) trackCount,
-			(unsigned long) [albums count],
+			(unsigned long) [[c tracks] count],
+			(unsigned long) [[c albums] count],
 			totalstr);
 		[totalstr release];
 		goto done;
@@ -410,10 +390,7 @@ done:
 		[excludeAlbums release];
 	if (sortedAlbums != nil)
 		[sortedAlbums release];
-	if (totalDuration != nil)
-		[totalDuration release];
-	[albums release];
-	[tracks release];
+	[c release];
 	[collector release];
 	[timer release];
 	[options release];
