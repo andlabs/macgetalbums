@@ -12,8 +12,8 @@ static NSString *regerrorString(int err, const regex_t *preg)
 	len = regerror(err, preg, NULL, 0);
 	data = [[NSMutableData alloc] initWithLength:len];
 	regerror(err, preg, [data mutableBytes], len);
-	ret = [[NSString alloc] initWithData:data
-		encoding:NSUTF8StringEncoding];
+	// don't use initWithData:encoding: because that will add the null terminator to the string, leading to corrupt output when printed
+	ret = [[NSString alloc] initWithUTF8String:[data bytes]];
 	[data release];
 	return ret;
 }

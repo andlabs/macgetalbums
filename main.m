@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
 	NSSet *albums;
 	NSArray *albumsarr, *sortedAlbums;
 	sortFunc sf;
-	regex_t excludeAlbumsRegexp;
+	Regexp *excludeAlbums;
 	Timer *timer;
 	Duration *totalDuration;
 	NSError *err;
@@ -286,22 +286,13 @@ int main(int argc, char *argv[])
 		[options usage];
 	}
 	if ([options excludeAlbumsRegexp] != NULL) {
-		int err;
-
-		err = regcomp(&excludeAlbumsRegexp,
-			[options excludeAlbumsRegexp],
-			REG_EXTENDED | REG_NOSUB);
-		if (err != 0) {
-			char *msg;
-			size_t len;
-
-			len = regerror(err, &excludeAlbumsRegexp,
-				NULL, 0);
-			msg = (char *) malloc(len * sizeof (char));
-			// TODO check errors
-			regerror(err, &excludeAlbumsRegexp, msg, len);
-			fprintf(stderr, "error parsing -xb regexp %s: %s\n", [options excludeAlbumsRegexp], msg);
-			free(msg);
+		excludeAlbums = [[Regexp alloc] initWithRegexp:[options excludeAlbumsRegexp]
+			caseInsensitive:NO
+			error:&err];
+		if (err != nil) {
+			[excludeAlbums release];
+			xfprintf(stderr, @"error parsing -xb regexp %s: %@\n", [options excludeAlbumsRegexp], err);
+			[err release];
 			[options usage];
 		}
 	}
@@ -358,27 +349,13 @@ int main(int argc, char *argv[])
 		[sortedAlbums release];
 		sortedAlbums = reversed;
 	}
-	if ([options excludeAlbumsRegexp] != NULL) {
+	if (excludeAlbums != nil) {
 		NSMutableArray *filtered;
 
 		filtered = [[NSMutableArray alloc] initWithCapacity:[sortedAlbums count]];
-		for (Album *a in sortedAlbums) {
-			int err;
-
-			err = regexec(&excludeAlbumsRegexp, [[a album] UTF8String],
-				0, NULL, 0);
-			switch (err) {
-			case 0:
-NSLog(@"excluding %@ - %@", [a artist], [a album]);
-				break;
-			case REG_NOMATCH:
+		for (Album *a in sortedAlbums)
+			if (![excludeAlbums matches:[a album]])
 				[filtered addObject:a];
-				break;
-			default:
-				// TODO
-				abort();
-			}
-		}
 		[sortedAlbums release];
 		sortedAlbums = filtered;
 	}
@@ -429,8 +406,8 @@ NSLog(@"excluding %@ - %@", [a artist], [a album]);
 	}
 
 done:
-	if ([options excludeAlbumsRegexp] != NULL)
-		regfree(&excludeAlbumsRegexp);
+	if (excludeAlbums != nil)
+		[excludeAlbums release];
 	if (sortedAlbums != nil)
 		[sortedAlbums release];
 	if (totalDuration != nil)
