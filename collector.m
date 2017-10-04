@@ -7,7 +7,7 @@ static const struct {
 	NSString *sel;
 	NSString *reverseSel;
 } sortModes[] = {
-	{ "album", @"compareForSortByArtist:", @"compareForReverseSortByArtist:" },
+	{ "artist", @"compareForSortByArtist:", @"compareForReverseSortByArtist:" },
 	{ "year", @"compareForSortByYear:", @"compareForReverseSortByYear:" },
 	{ "length", @"compareForSortByLength:", @"compareForReverseSortByLength:" },
 	{ "none", nil, nil },

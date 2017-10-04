@@ -121,7 +121,7 @@ static NSComparisonResult compareYears(NSInteger a, NSInteger b)
 		[self->firstArtwork retain];
 }
 
-// note that the forward sorts come together to operate like both prepare.sh and (in the case of compareForSortByArtist:, iTunes itself)
+// note that the forward sorts come together to operate like both prepare.sh and (in the case of compareForSortByArtist:, iTunes itself (though TODO should compilations be at the end instead? because now they're at the beginning))
 - (NSComparisonResult)compareForSortByArtist:(Album *)b
 {
 	NSComparisonResult r;

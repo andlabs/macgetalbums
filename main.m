@@ -19,9 +19,10 @@ AddBoolFlag(Options, minutes,
 AddBoolFlag(Options, showArtwork,
 	@"a", @"show tracks that have missing or duplicate artwork (overrides -c and -p)")
 AddBoolFlag(Options, PDF, @"p", @"write a PDF gallery of albums to stdout (overrides -c)")
-static NSString *availableSortList(void);
+// TODO manage memory for the sort list properly
+// TODO also unify the terminology (sortBy, sortMode, sortMethod, sortKey)
 AddStringFlag(Options, sortBy,
-	@"o", "year", ([NSString stringWithFormat:@"sort by the given key (%@; default is year)", availableSortList()]))
+	@"o", "year", ([NSString stringWithFormat:@"sort by the given key (%@; default is year)", [Collection copySortModeList]]))
 AddBoolFlag(Options, reverseSort,
 	@"r", @"reverse sort order")
 // TODO excludeArtistRegexp with name -xa
@@ -168,88 +169,13 @@ static void showArtworkCounts(NSArray *tracks)
 		}
 }
 
-typedef NSArray *(*sortFunc)(NSArray *albums);
-
-static NSArray *sortByArtist(NSArray *albums)
-{
-	NSArray *new;
-
-	new = [albums sortedArrayUsingSelector:@selector(compareForSortByArtist:)];
-	[new retain];
-	return new;
-}
-
-static NSArray *sortByYear(NSArray *albums)
-{
-	NSArray *new;
-
-	new = [albums sortedArrayUsingSelector:@selector(compareForSortByYear:)];
-	[new retain];
-	return new;
-}
-
-static NSArray *sortByLength(NSArray *albums)
-{
-	NSArray *new;
-
-	new = [albums sortedArrayUsingSelector:@selector(compareForSortByLength:)];
-	[new retain];
-	return new;
-}
-
-static NSArray *noSort(NSArray *albums)
-{
-	[albums retain];
-	return albums;
-}
-
-struct availableSort {
-	const char *name;
-	sortFunc func;
-};
-
-static const struct availableSort availableSorts[] = {
-	{ "artist", sortByArtist },
-	{ "year", sortByYear },
-	{ "length", sortByLength },
-	{ "none", noSort },
-	{ NULL, NULL },
-};
-
-static NSMutableString *asl = nil;
-
-NSString *availableSortList(void)
-{
-	const struct availableSort *s;
-
-	if (asl == nil) {
-		asl = [NSMutableString new];
-		s = availableSorts;
-		[asl appendFormat:@"%s", s->name];
-		for (s++; s->name != NULL; s++)
-			[asl appendFormat:@", %s", s->name];
-	}
-	return asl;
-}
-
-sortFunc sortFuncFor(const char *name)
-{
-	const struct availableSort *s;
-
-	for (s = availableSorts; s->name != NULL; s++)
-		if (strcmp(s->name, name) == 0)
-			return s->func;
-	return NULL;
-}
-
 int main(int argc, char *argv[])
 {
 	BOOL isSigned;
 	BOOL showUsage;
 	id<Collector> collector;
 	Collection *c;
-	NSArray *albumsarr, *sortedAlbums;
-	sortFunc sf;
+	NSArray *albums;
 	Regexp *excludeAlbums;
 	Timer *timer;
 	NSError *err;
@@ -262,8 +188,7 @@ int main(int argc, char *argv[])
 	argv += optind;
 	if (argc != 0)
 		[options usage];
-	sf = sortFuncFor([options sortBy]);
-	if (sf == NULL) {
+	if (![Collection isValidSortMode:[options sortBy]]) {
 		fprintf(stderr, "error: unknown sort key %s\n", [options sortBy]);
 		[options usage];
 	}
@@ -307,7 +232,7 @@ int main(int argc, char *argv[])
 	xlogtimer(@"collect tracks", timer, TimerCollect);
 	xlogtimer(@"convert tracks to our internal data structure format", timer, TimerConvert);
 
-	sortedAlbums = nil;
+	albums = nil;
 
 	if ([options showArtwork]) {
 		showArtworkCounts([c tracks]);
@@ -317,26 +242,18 @@ int main(int argc, char *argv[])
 	[timer start:TimerSort];
 	// TODO no need to do this in -c mode
 	// TODO allow using iTunes sort keys
-	albumsarr = [[c albums] allObjects];
-	sortedAlbums = (*sf)(albumsarr);
-	if ([options reverseSort]) {
-		NSArray *reversed;
-
-		// TODO manage memory for the enumerator properly
-		reversed = [[sortedAlbums reverseObjectEnumerator] allObjects];
-		[reversed retain];
-		[sortedAlbums release];
-		sortedAlbums = reversed;
-	}
+	// TODO should sorts be case-insensitive, or should that be optional, or not at all?
+	albums = [c copySortedAlbums:[options sortBy]
+		reverseSort:[options reverseSort]];
 	if (excludeAlbums != nil) {
 		NSMutableArray *filtered;
 
-		filtered = [[NSMutableArray alloc] initWithCapacity:[sortedAlbums count]];
-		for (Album *a in sortedAlbums)
+		filtered = [[NSMutableArray alloc] initWithCapacity:[albums count]];
+		for (Album *a in albums)
 			if (![excludeAlbums matches:[a album]])
 				[filtered addObject:a];
-		[sortedAlbums release];
-		sortedAlbums = filtered;
+		[albums release];
+		albums = filtered;
 	}
 	[timer end];
 	xlogtimer(@"sort and filter albums", timer, TimerSort);
@@ -346,7 +263,7 @@ int main(int argc, char *argv[])
 		const UInt8 *buf;
 		CFIndex len;
 
-		data = makePDF(sortedAlbums, [options minutes]);
+		data = makePDF(albums, [options minutes]);
 		buf = CFDataGetBytePtr(data);
 		len = CFDataGetLength(data);
 		// TODO check error
@@ -370,7 +287,7 @@ int main(int argc, char *argv[])
 
 	// TODO provide a custom separator option
 	// TODO provide a custom sort option and default sort by year maybe
-	for (Album *a in sortedAlbums) {
+	for (Album *a in albums) {
 		xprintf(@"%ld\t%@\t%@",
 			(long) ([a year]),
 			[a artist],
@@ -388,8 +305,8 @@ int main(int argc, char *argv[])
 done:
 	if (excludeAlbums != nil)
 		[excludeAlbums release];
-	if (sortedAlbums != nil)
-		[sortedAlbums release];
+	if (albums != nil)
+		[albums release];
 	[c release];
 	[collector release];
 	[timer release];
