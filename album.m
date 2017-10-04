@@ -5,6 +5,15 @@
 
 NSString *const compilationArtist = @"(compilation)";
 
+static NSComparisonResult compareYears(NSInteger a, NSInteger b)
+{
+	if (a < b)
+		return NSOrderedAscending;
+	if (a > b)
+		return NSOrderedDescending;
+	return NSOrderedSame;
+}
+
 @implementation Album
 
 - (id)initWithArtist:(NSString *)aa album:(NSString *)a
@@ -112,7 +121,7 @@ NSString *const compilationArtist = @"(compilation)";
 		[self->firstArtwork retain];
 }
 
-// note that these three operate like prepare.sh
+// note that the forward sorts come together to operate like both prepare.sh and (in the case of compareForSortByArtist:, iTunes itself)
 - (NSComparisonResult)compareForSortByArtist:(Album *)b
 {
 	NSComparisonResult r;
@@ -123,13 +132,25 @@ NSString *const compilationArtist = @"(compilation)";
 	return [self->album compare:b->album];
 }
 
+// and the reverse sorts are how Go's reverse sort works
+- (NSComparisonResult)compareForReverseSortByArtist:(Album *)b
+{
+	return [b compareForSortByArtist:self];
+}
+
 - (NSComparisonResult)compareForSortByYear:(Album *)b
 {
-	if (self->year < b->year)
-		return NSOrderedAscending;
-	if (self->year > b->year)
-		return NSOrderedDescending;
+	NSComparisonResult r;
+
+	r = compareYears(self->year, b->year);
+	if (r != NSOrderedSame)
+		return r;
 	return [self compareForSortByArtist:b];
+}
+
+- (NSComparisonResult)compareForReverseSortByYear:(Album *)b
+{
+	return [b compareForSortByYear:self];
 }
 
 - (NSComparisonResult)compareForSortByLength:(Album *)b
@@ -140,6 +161,11 @@ NSString *const compilationArtist = @"(compilation)";
 	if (r != NSOrderedSame)
 		return r;
 	return [self compareForSortByYear:b];
+}
+
+- (NSComparisonResult)compareForReverseSortByLength:(Album *)b
+{
+	return [b compareForSortByLength:self];
 }
 
 // see also https://www.mikeash.com/pyblog/friday-qa-2010-06-18-implementing-equality-and-hashing.html (thanks mattstevens in irc.freenode.net #macdev)

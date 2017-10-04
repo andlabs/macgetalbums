@@ -1,6 +1,19 @@
 // 23 september 2017
 #import "macgetalbums.h"
 
+static const struct {
+	const char *name;
+	// because @selector() is not a compile-time constant :|
+	NSString *sel;
+	NSString *reverseSel;
+} sortModes[] = {
+	{ "album", @"compareForSortByArtist:", @"compareForReverseSortByArtist:" },
+	{ "year", @"compareForSortByYear:", @"compareForReverseSortByYear:" },
+	{ "length", @"compareForSortByLength:", @"compareForReverseSortByLength:" },
+	{ "none", nil, nil },
+	{ NULL, nil, nil },
+};
+
 @implementation Collection
 
 - (id)initWithTracks:(NSArray *)t albums:(NSSet *)a totalDuration:(Duration *)d
@@ -38,6 +51,56 @@
 - (Duration *)totalDuration
 {
 	return self->totalDuration;
+}
+
++ (NSString *)copySortModeList
+{
+	NSMutableString *ret;
+	int i;
+
+	i = 0;
+	ret = [[NSMutableString alloc] initWithUTF8String:sortModes[i].name];
+	for (i++; sortModes[i].name != NULL; i++)
+		[ret appendFormat:@", %s", sortModes[i].name];
+	return ret;
+}
+
++ (BOOL)isValidSortMode:(const char *)mode
+{
+	int i;
+
+	for (i = 0; sortModes[i].name != NULL; i++)
+		if (strcmp(sortModes[i].name, mode) == 0)
+			return YES;
+	return NO;
+}
+
+- (NSArray *)copySortedAlbums:(const char *)sortMode reverseSort:(BOOL)reverseSort
+{
+	NSArray *array;
+	NSString *sel;
+	int i;
+
+	for (i = 0; sortModes[i].name != NULL; i++)
+		if (strcmp(sortModes[i].name, sortMode) == 0)
+			break;
+	if (sortModes[i].name == NULL)
+		[NSException raise:NSInvalidArgumentException
+			// TODO manage memory properly for NSStringFromClass()
+			format:@"unknown sort mode %s given to -[%@ copySortedAlbums:]", sortMode, NSStringFromClass([self class])];
+
+	array = [self->albums allObjects];
+	sel = sortModes[i].sel;
+	if (reverseSort)
+		sel = sortModes[i].reverseSel;
+	if (sel != nil)
+		array = [array sortedArrayUsingSelector:NSSelectorFromString(sel)];
+	else if (reverseSort)
+		// special case for when reversing "none"
+		// TODO properly manage memory for the enumerator
+		array = [[array reverseObjectEnumerator] allObjects];
+	[array retain];
+	return array;
 }
 
 @end

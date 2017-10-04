@@ -128,8 +128,11 @@ extern NSString *const compilationArtist;
 - (NSImage *)firstArtwork;
 - (void)setFirstArtwork:(NSImage *)a;
 - (NSComparisonResult)compareForSortByArtist:(Album *)b;
+- (NSComparisonResult)compareForReverseSortByArtist:(Album *)b;
 - (NSComparisonResult)compareForSortByYear:(Album *)b;
+- (NSComparisonResult)compareForReverseSortByYear:(Album *)b;
 - (NSComparisonResult)compareForSortByLength:(Album *)b;
+- (NSComparisonResult)compareForReverseSortByLength:(Album *)b;
 @end
 // makes and adds a new Album if not present; you must release the return value when done regardless
 extern Album *albumInSet(NSMutableSet *albums, NSString *artist, NSString *album);
@@ -144,6 +147,9 @@ extern Album *albumInSet(NSMutableSet *albums, NSString *artist, NSString *album
 - (NSArray *)tracks;
 - (NSSet *)albums;
 - (Duration *)totalDuration;
++ (NSString *)copySortModeList;
++ (BOOL)isValidSortMode:(const char *)mode;
+- (NSArray *)copySortedAlbums:(const char *)sortMode reverseSort:(BOOL)reverseSort;
 @end
 @protocol Collector<NSObject>
 // apparently this isn't in the NSObject protocol, but we need it
