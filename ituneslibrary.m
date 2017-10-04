@@ -133,11 +133,15 @@ static BOOL trackEarlierThan(id<ourITLibMediaItem> a, id<ourITLibMediaItem> b)
 	[super dealloc];
 }
 
-- (NSArray *)collectTracksAndAlbums:(NSSet **)albums withArtwork:(BOOL)withArtwork
+- (Collection *)collectTracksAndAlbumsWithArtwork:(BOOL)withArtwork
 {
-	NSArray *tracks;
+	Collection *ret;
 	NSMutableArray *tracksOut;
 	NSMutableSet *albumsOut;
+	Duration *totalDuration;
+	NSArray *tracks;
+
+	totalDuration = [[Duration alloc] initWithMilliseconds:0];
 
 	[self->timer start:TimerCollect];
 	tracks = [self->library allMediaItems];
@@ -171,6 +175,7 @@ static BOOL trackEarlierThan(id<ourITLibMediaItem> a, id<ourITLibMediaItem> b)
 		p.artworkCount = 0;
 		trackOut = [[Track alloc] initWithParams:&p
 			lengthMilliseconds:[track totalTime]];
+		[totalDuration add:[trackOut length]];
 
 		[tracksOut addObject:trackOut];
 		albumOut = albumInSet(albumsOut,
@@ -202,8 +207,13 @@ static BOOL trackEarlierThan(id<ourITLibMediaItem> a, id<ourITLibMediaItem> b)
 	[self->timer end];
 
 	// don't release anything; we don't own references to them
-	*albums = albumsOut;
-	return tracksOut;
+	ret = [[Collection alloc] initWithTracks:tracksOut
+		albums:albumsOut
+		totalDuration:totalDuration];
+	[totalDuration release];
+	[albumsOut release];
+	[tracksOut release];
+	return ret;
 }
 
 @end

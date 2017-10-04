@@ -151,8 +151,7 @@ extern Album *albumInSet(NSMutableSet *albums, NSString *artist, NSString *album
 + (BOOL)canGetArtworkCount;
 // you own the returned error
 - (id)initWithTimer:(Timer *)t error:(NSError **)err;
-// you own the returned array and set
-- (NSArray *)collectTracksAndAlbums:(NSSet **)albums withArtwork:(BOOL)withArtwork;
+- (Collection *)collectTracksAndAlbumsWithArtwork:(BOOL)withArtwork;
 @end
 extern NSArray *defaultCollectorsArray(void);
 extern NSArray *singleCollectorArray(const char *what);

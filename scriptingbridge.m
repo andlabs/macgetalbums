@@ -61,11 +61,15 @@ static BOOL trackEarlierThan(iTunesTrack *a, iTunesTrack *b)
 	[super dealloc];
 }
 
-- (NSArray *)collectTracksAndAlbums:(NSSet **)albums withArtwork:(BOOL)withArtwork
+- (Collection *)collectTracksAndAlbumsWithArtwork:(BOOL)withArtwork
 {
+	Collection *ret;
 	NSMutableArray *tracksOut;
 	NSMutableSet *albumsOut;
+	Duration *totalDuration;
 	NSUInteger i, nTracks;
+
+	totalDuration = [[Duration alloc] initWithMilliseconds:0];
 
 	@autoreleasepool {
 		// all of these variables are either autoreleased or not owned by us, judging from sample code and Cocoa memory management rules and assumptions about what methods get called by sdp-generated headers
@@ -137,6 +141,7 @@ static BOOL trackEarlierThan(iTunesTrack *a, iTunesTrack *b)
 			p.artworkCount = [[track artworks] count];
 			trackOut = [[Track alloc] initWithParams:&p
 				lengthSeconds:doubleAtIndex(allDurations, i)];
+			[totalDuration add:[trackOut length]];
 
 			[tracksOut addObject:trackOut];
 			albumOut = albumInSet(albumsOut,
@@ -182,8 +187,13 @@ static BOOL trackEarlierThan(iTunesTrack *a, iTunesTrack *b)
 		[self->timer end];
 	}
 
-	*albums = albumsOut;
-	return tracksOut;
+	ret = [[Collector alloc] initWithTracks:tracksOut
+		albums:albumsOut
+		totalDuration:totalDuration];
+	[totalDuration release];
+	[albumsOut release];
+	[tracksOut release];
+	return ret;
 }
 
 @end
