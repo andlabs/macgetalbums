@@ -150,15 +150,19 @@ extern NSString *const RegexpErrDomain;
 @end
 
 // collector.m
-extern NSString *const CollectionParamsWithArtworkKey;
-extern NSString *const CollectionParamsExcludeAlbumsKey;
+extern NSString *const CollectionParamsIncludeArtworkKey;
+extern NSString *const CollectionParamsExcludeAlbumsRegexpKey;
+typedef BOOL (*IsRealFirstTrackFunc)(id<NSObject> candidate, NSAlbum *a);
+typedef void (*AddAlbumArtworkFunc)(Album *a);
 @interface Collection : NSObject {
-	NSArray *tracks;
-	NSSet *albums;
+	NSDictionary *params;
+	NSMutableArray *tracks;
+	NSMutableSet *albums;
 	Duration *totalDuration;
 }
-- (id)initWithParams:(NSDictionary *)params;
-- (BOOL)addTrack:(Track *)t;
+- (id)initWithParams:(NSDictionary *)p trackCount:(NSUInteger)trackCount;
+- (BOOL)addTrack:(Track *)t withFirstTrack:(id<NSObject>)firstTrack isRealFirstTrackFunc:(ISRealFirstTrackFunc)f;
+- (void)addArtworksAndReleaseFirstTracks:(AddAlbumArtworkFunc)f;
 - (NSArray *)tracks;
 - (NSSet *)albums;
 - (Duration *)totalDuration;
@@ -174,7 +178,7 @@ extern NSString *const CollectionParamsExcludeAlbumsKey;
 + (BOOL)canGetArtworkCount;
 // you own the returned error
 - (id)initWithTimer:(Timer *)t error:(NSError **)err;
-- (Collection *)collectWithParams:(NSDictionary *)params;
+- (Collection *)collectWithParams:(NSDictionary *)p;
 @end
 extern NSArray *defaultCollectorsArray(void);
 extern NSArray *singleCollectorArray(const char *what);

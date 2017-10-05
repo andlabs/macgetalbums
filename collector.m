@@ -1,6 +1,25 @@
 // 23 september 2017
 #import "macgetalbums.h"
 
+NSString *const CollectionParamsIncludeArtworkKey = @"CollectionParamsIncludeArtworkKey";
+
+static BOOL paramsIncludeArtwork(NSDictionary *params)
+{
+	NSNumber *n;
+
+	n = (NSNumber *) [params objectForKey:CollectionParamsIncludeArtworkKey];
+	if (n == nil)
+		return NO;
+	return [n boolValue];
+}
+
+NSString *const CollectionParamsExcludeAlbumsRegexpKey = @"CollectionParamsExcludeAlbumsRegexpKey";
+
+static Regexp *paramsExcludeAlbumsRegexp(NSDictionary *p)
+{
+	return (Regexp *) [p objectForKey:CollectionParamsExcludeAlbumsRegexpKey];
+}
+
 static const struct {
 	const char *name;
 	// because @selector() is not a compile-time constant :|
@@ -16,16 +35,15 @@ static const struct {
 
 @implementation Collection
 
-- (id)initWithTracks:(NSArray *)t albums:(NSSet *)a totalDuration:(Duration *)d
+- (id)initWithParams:(NSDictionary *)p trackCount:(NSUInteger)trackCount
 {
 	self = [super init];
 	if (self) {
-		self->tracks = t;
-		[self->tracks retain];
-		self->albums = a;
-		[self->albums retain];
-		self->totalDuration = d;
-		[self->totalDuration retain];
+		self->params = p;
+		[self->params retain];
+		self->tracks = [[NSMutableArray alloc] initWithCapacity:trackCount];
+		self->albums = [[NSMutableArray alloc] initWithCapacity:trackCount];
+		self->totalDuration = [[Duration alloc] initWithMilliseconds:0];
 	}
 	return self;
 }
@@ -35,7 +53,42 @@ static const struct {
 	[self->totalDuration release];
 	[self->albums release];
 	[self->tracks release];
+	[self->params release];
 	[super dealloc];
+}
+
+- (BOOL)addTrack:(Track *)t withFirstTrack:(id<NSObject>)firstTrack isRealFirstTrackFunc:(IsRealFirstTrackFunc)f
+{
+	Regexp *r;
+	Album *a;
+
+	// do we exclude this album?
+	r = paramsExcludeAlbumsRegexp(self->params);
+	if (r != nil && [r matches:[t album]])
+		return NO;
+
+	// okay, we're good to add the track
+	[self->tracks addObect:t];
+	a = albumInSet(self->albums, [t artist], [t album]);
+	[a addTrack:t];
+	if ([a firstTrack] == nil || (*f)(firstTrack, a))
+		[a setFirstTrack:firstTrack];
+	[self->totalDuration add:[t length]];
+	return YES;
+}
+
+- (void)addArtworksAndReleaseFirstTracks:(AddAlbumArtworkFunc)f
+{
+	BOOL withArtwork;
+
+	withArtwork = paramsIncludeArtwork(self->params);
+	for (Album *a in self->albums) {
+		if ([a firstTrack] == nil)
+			continue;
+		if (addArtwork)
+			(*f)(a);
+		[a setFirstTrack:nil];
+	}
 }
 
 - (NSArray *)tracks
