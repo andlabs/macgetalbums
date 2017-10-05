@@ -1,8 +1,6 @@
 // 25 september 2017
 #import "macgetalbums.h"
 
-#define pageWidth 612.0
-#define pageHeight 792.0
 #define margins 72.0
 // TODO rename this to albumWidth?
 #define itemWidth 108.0
@@ -10,7 +8,7 @@
 #define artworkTextPadding 4.5
 
 // TODO save the text matrix
-static NSGraphicsContext *mkPageContext(CGContextRef c, NSGraphicsContext **prev)
+static NSGraphicsContext *mkPageContext(CGContextRef c, NSGraphicsContext **prev, CGFloat height)
 {
 	NSGraphicsContext *new;
 
@@ -31,7 +29,7 @@ static NSGraphicsContext *mkPageContext(CGContextRef c, NSGraphicsContext **prev
 	// - bayoubengal in irc.freenode.net #macdev
 	// - https://stackoverflow.com/questions/6404057/create-pdf-in-objective-c
 	// - https://developer.apple.com/library/content/documentation/GraphicsImaging/Conceptual/drawingwithquartz2d/dq_context/dq_context.html (moreso the note about iOS but it applies here too)
-	CGContextTranslateCTM(c, 0, pageHeight);
+	CGContextTranslateCTM(c, 0, height);
 	CGContextScaleCTM(c, 1.0, -1.0);
 	// and do this too just to be safe
 	CGContextSetTextMatrix(c, CGAffineTransformIdentity);
@@ -153,7 +151,7 @@ static NSValue *scaleImageSize(NSImage *artwork, CGFloat width)
 	return [NSValue valueWithSize:bsize];
 }
 
-CFDataRef makePDF(NSArray *albums, BOOL onlyMinutes)
+CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 {
 	CFMutableDataRef data;
 	CGDataConsumerRef consumer;
@@ -172,7 +170,7 @@ CFDataRef makePDF(NSArray *albums, BOOL onlyMinutes)
 	}
 	consumer = CGDataConsumerCreateWithCFData(data);
 	// consumer will retain data, according to the Programming Quartz book code samples
-	mediaBox = CGRectMake(0, 0, pageWidth, pageHeight);
+	mediaBox = CGRectMake(0, 0, p->pageWidth, p->pageHeight);
 	c = CGPDFContextCreate(consumer, &mediaBox, NULL);
 	if (c == NULL) {
 		// TODO produce an error
@@ -203,7 +201,7 @@ CFDataRef makePDF(NSArray *albums, BOOL onlyMinutes)
 
 		items = itemWidth * (CGFloat) nPerLine;
 		paddings = padding * (CGFloat) (nPerLine - 1);
-		if ((margins + items + padding) >= (pageWidth - margins - itemWidth))
+		if ((margins + items + padding) >= (p->pageWidth - margins - itemWidth))
 			break;
 		nPerLine++;
 	}
@@ -315,13 +313,13 @@ CFDataRef makePDF(NSArray *albums, BOOL onlyMinutes)
 		lineHeight = maxArtworkHeight + artworkTextPadding + maxTextHeight;
 
 		// set up a page if needed
-		if (nc != nil && (y + lineHeight) >= (pageHeight - margins)) {
+		if (nc != nil && (y + lineHeight) >= (p->pageHeight - margins)) {
 			endPageContext(c, nc, prev);
 			nc = nil;
 			prev = nil;
 		}
 		if (nc == nil) {
-			nc = mkPageContext(c, &prev);
+			nc = mkPageContext(c, &prev, p->pageHeight);
 			y = margins;
 		}
 

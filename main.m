@@ -29,7 +29,10 @@ AddBoolFlag(Options, reverseSort,
 AddStringFlag(Options, excludeAlbumsRegexp,
 	@"xb", NULL, @"if specified, exclude albums whose names match the given regexp")
 // TODO case-insensitive regexp match
-// TODO how should these regex options affect -c?
+AddCGFloatFlag(Options, pdfPageWidth,
+	@"pdfpagewidth", 612.0, @"width of pages in the output PDF, in units of 1/72-inch points (default 612.0 for 8.5in)")
+AddCGFloatFlag(Options, pdfPageHeight,
+	@"pdfpageheight", 792.0, @"height of pages in the output PDF, in units of 1/72-inch points (default 792.0 for 11in)")
 
 static BOOL usagePrintCollectors(NSString *name, Class<Collector> class, void *data)
 {

@@ -197,7 +197,13 @@ extern void foreachCollector(NSArray *collectors, foreachCollectorFunc f, void *
 extern BOOL checkIfSigned(NSError **err);
 
 // pdf.m
-extern CFDataRef makePDF(NSArray *albums, BOOL onlyMinutes);
+struct makePDFParams {
+	BOOL minutesOnly;
+	CGFloat pageWidth;
+	CGFloat pageHeight;
+	CGFloat pageMargins;
+};
+extern CFDataRef makePDF(NSArray *albums, struct makePDFParams *p);
 
 // printlog.m
 extern void xvfprintf(FILE *f, NSString *fmt, va_list ap);
