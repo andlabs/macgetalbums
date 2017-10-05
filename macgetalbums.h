@@ -137,13 +137,28 @@ extern NSString *const compilationArtist;
 // makes and adds a new Album if not present; you must release the return value when done regardless
 extern Album *albumInSet(NSMutableSet *albums, NSString *artist, NSString *album);
 
+// regexp.m
+// the code is the return from regcomp() and the localized description is already formatted with regerror(); there's currently no way to get preg out (TODO?)
+extern NSString *const RegexpErrDomain;
+@interface Regexp : NSObject {
+	regex_t preg;
+	BOOL valid;
+}
+// you own the returned error
+- (id)initWithRegexp:(const char *)re caseInsensitive:(BOOL)caseInsensitive error:(NSError **)err;
+- (BOOL)matches:(NSString *)str;
+@end
+
 // collector.m
+extern NSString *const CollectionParamsWithArtworkKey;
+extern NSString *const CollectionParamsExcludeAlbumsKey;
 @interface Collection : NSObject {
 	NSArray *tracks;
 	NSSet *albums;
 	Duration *totalDuration;
 }
-- (id)initWithTracks:(NSArray *)t albums:(NSSet *)a totalDuration:(Duration *)d;
+- (id)initWithParams:(NSDictionary *)params;
+- (BOOL)addTrack:(Track *)t;
 - (NSArray *)tracks;
 - (NSSet *)albums;
 - (Duration *)totalDuration;
@@ -159,7 +174,7 @@ extern Album *albumInSet(NSMutableSet *albums, NSString *artist, NSString *album
 + (BOOL)canGetArtworkCount;
 // you own the returned error
 - (id)initWithTimer:(Timer *)t error:(NSError **)err;
-- (Collection *)collectTracksAndAlbumsWithArtwork:(BOOL)withArtwork;
+- (Collection *)collectWithParams:(NSDictionary *)params;
 @end
 extern NSArray *defaultCollectorsArray(void);
 extern NSArray *singleCollectorArray(const char *what);
@@ -179,18 +194,6 @@ extern BOOL checkIfSigned(NSError **err);
 
 // pdf.m
 extern CFDataRef makePDF(NSArray *albums, BOOL onlyMinutes);
-
-// regexp.m
-// the code is the return from regcomp() and the localized description is already formatted with regerror(); there's currently no way to get preg out (TODO?)
-extern NSString *const RegexpErrDomain;
-@interface Regexp : NSObject {
-	regex_t preg;
-	BOOL valid;
-}
-// you own the returned error
-- (id)initWithRegexp:(const char *)re caseInsensitive:(BOOL)caseInsensitive error:(NSError **)err;
-- (BOOL)matches:(NSString *)str;
-@end
 
 // printlog.m
 extern void xvfprintf(FILE *f, NSString *fmt, va_list ap);
