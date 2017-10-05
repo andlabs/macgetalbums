@@ -1,8 +1,6 @@
 // 25 september 2017
 #import "macgetalbums.h"
 
-// TODO rename this to albumWidth?
-#define itemWidth 108.0
 #define artworkTextPadding 4.5
 
 // TODO save the text matrix
@@ -197,9 +195,9 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 		CGFloat items;
 		CGFloat paddings;
 
-		items = itemWidth * (CGFloat) nPerLine;
+		items = p->itemWidth * (CGFloat) nPerLine;
 		paddings = p->padding * (CGFloat) (nPerLine - 1);
-		if ((p->margins + items + p->padding) >= (p->pageWidth - p->margins - itemWidth))
+		if ((p->margins + items + p->padding) >= (p->pageWidth - p->margins - p->itemWidth))
 			break;
 		nPerLine++;
 	}
@@ -244,17 +242,17 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 				compressed = compressImage([a firstArtwork]);
 				[compressedArtworks addObject:compressed];
 				[compressed release];
-				[scaledSizes addObject:scaleImageSize([a firstArtwork], itemWidth)];
+				[scaledSizes addObject:scaleImageSize([a firstArtwork], p->itemWidth)];
 			}
 			csl = [[CSL alloc] initWithText:[a album]
-				width:itemWidth
+				width:p->itemWidth
 				// TODO change all these titleThings to albumThings
 				font:titleFont
 				color:titleColor];
 			[titleCSLs addObject:csl];
 			[csl release];
 			csl = [[CSL alloc] initWithText:[a artist]
-				width:itemWidth
+				width:p->itemWidth
 				font:artistFont
 				color:artistColor];
 			[artistCSLs addObject:csl];
@@ -268,7 +266,7 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 			[infostr appendString:s];
 			[s release];
 			csl = [[CSL alloc] initWithText:infostr
-				width:itemWidth
+				width:p->itemWidth
 				font:infoFont
 				color:infoColor];
 			[infoCSLs addObject:csl];
@@ -284,7 +282,7 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 			CGFloat height;
 
 			// make the no-artwork space square
-			height = itemWidth;
+			height = p->itemWidth;
 			obj = [scaledSizes objectAtIndex:j];
 			if (obj != [NSNull null]) {
 				v = (NSValue *) obj;
@@ -340,7 +338,7 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 				r.size = [v sizeValue];
 				[img drawInRect:r];
 			}
-			x += itemWidth + p->padding;
+			x += p->itemWidth + p->padding;
 		}
 		y += maxArtworkHeight;
 
@@ -362,7 +360,7 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 			csl = (CSL *) [infoCSLs objectAtIndex:j];
 			[csl drawAt:NSMakePoint(x, cy)];
 			cy += [csl height];
-			x += itemWidth + p->padding;
+			x += p->itemWidth + p->padding;
 		}
 		y += maxTextHeight;
 

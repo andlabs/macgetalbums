@@ -201,10 +201,13 @@ extern BOOL checkIfSigned(NSError **err);
 // pdf.m
 struct makePDFParams {
 	BOOL minutesOnly;
+	// TODO should these be replaced with an "items per line" and "lines per page" option instead, and if so, which page size parameters do we keep...
 	CGFloat pageWidth;
 	CGFloat pageHeight;
 	CGFloat margins;
 	CGFloat padding;
+	// TODO rename this to albumWidth?
+	CGFloat itemWidth;
 };
 extern CFDataRef makePDF(NSArray *albums, struct makePDFParams *p);
 
