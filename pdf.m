@@ -62,7 +62,7 @@ static void endPageContext(CGContextRef c, NSGraphicsContext *nc, NSGraphicsCont
 }
 - (id)initWithText:(NSString *)text width:(CGFloat)width font:(NSFont *)font color:(NSColor *)color;
 - (CGFloat)height;
-- (void)drawAt:(NSPoint)p;
+- (void)drawAtPoint:(NSPoint)p;
 @end
 
 @implementation CSL
@@ -106,7 +106,7 @@ static void endPageContext(CGContextRef c, NSGraphicsContext *nc, NSGraphicsCont
 	return [self->l usedRectForTextContainer:self->c].size.height;
 }
 
-- (void)drawAt:(NSPoint)p
+- (void)drawAtPoint:(NSPoint)p
 {
 	[self->l drawGlyphsForGlyphRange:self->glyphRange atPoint:p];
 }
@@ -123,7 +123,7 @@ static NSImage *compressImage(NSImage *artwork)
 	// If we don't do this, the PDFs can wind up with huge sizes, even with PNG!
 	// Fortunately, CGPDFContext will preserve image compression for JPEGs and PNGs if specified, allowing this to work at all (see also https://lists.apple.com/archives/quartz-dev/2004/Nov/threads.html#00030, in particular the thread starting with https://lists.apple.com/archives/quartz-dev/2004/Nov/msg00025.html).
 	// I'm fortunate NSImage operates similarly.
-	// TODO fine-tune the quality
+	// TODO fine-tune the quality; make it a parameter (both to help fine-tune it and in case an override is necessary)
 #define jpegQuality 0.85
 	quality = [[NSNumber alloc] initWithDouble:jpegQuality];
 	props = [[NSDictionary alloc] initWithObjectsAndKeys:quality, NSImageCompressionFactor, nil];
@@ -136,16 +136,129 @@ static NSImage *compressImage(NSImage *artwork)
 	return [[NSImage alloc] initWithData:compressedData];
 }
 
-// you do NOT own the returned size
-static NSValue *scaleImageSize(NSImage *artwork, CGFloat width)
+static CGFloat scaleHeight(NSSize orig, CGFloat newWidth)
 {
-	NSSize asize, bsize;
-
-	asize = [artwork size];
-	bsize.width = width;
-	bsize.height = (asize.height * bsize.width) / asize.width;
-	return [NSValue valueWithSize:bsize];
+	return (orig.height * newWidth) / orig.width;
 }
+
+static NSString *albumInfoString(Album *a, BOOL minutesOnly)
+{
+	NSMutableString *infostr;
+
+	infostr = [NSMutableString new];
+	[infostr appendFormat:@"%ld", (long) [a year]];
+	[infostr appendString:@" • "];
+	// TODO song and disc count
+	[infostr appendString:@" • "];
+	s = [[a length] stringWithOnlyMinutes:minutesOnly];
+	[infostr appendString:s];
+	[s release];
+	return infostr;
+}
+
+@interface pdfAlbumItem : NSObject {
+	CGFloat width;
+	NSImage *compressedImage;
+	CGFloat scaledImageHeight;
+	CSL *albumCSL;
+	CSL *artistCSL;
+	CSL *infoCSL;
+}
+- (id)initWithAlbum:(Album *)a width:(CGFloat)wid minutesOnly:(BOOL)minutesOnly albumFont:(NSFont *)albumFont albumColor:(NSColor *)albumColor artistFont:(NSFont *)artistFont artistColor:(NSColor *)artistColor infoFont:(NSFont *)infoFont infoColor:(NSColor *)infoColor;
+- (CGFloat)scaledImageHeight;
+- (CGFloat)totalTextHeight;
+- (void)drawAtPoint:(NSPoint)pt withMaxArtworkHeight:(CGFloat)artHeight;
+@end
+
+@implementation pdfAlbumItem
+
+- (id)initWithAlbum:(Album *)a width:(CGFloat)wid minutesOnly:(BOOL)minutesOnly albumFont:(NSFont *)albumFont albumColor:(NSColor *)albumColor artistFont:(NSFont *)artistFont artistColor:(NSColor *)artistColor infoFont:(NSFont *)infoFont infoColor:(NSColor *)infoColor
+{
+	self = [super init];
+	if (self) {
+		NSString *infostr;
+
+		self->width = wid;
+
+		self->compressedImage = nil;
+		self->scaledImageHeight = self->width;
+		if ([a firstArtwork] != nil) {
+			self->compressedImage = compressImage([a firstArtwork]);
+			self->scaledImageHeight = scaleHeight([self->compressedImage size], self->width);
+		}
+
+		self->albumCSL = [[CSL alloc] initWithText:[a album]
+			width:self->width
+			font:albumFont
+			color:albumColor];
+		self->artistCSL = [[CSL alloc] initWithText:[a artist]
+			width:self->width
+			font:artistFont
+			color:artistColor];
+		infostr = albumInfoString(a, minutesOnly);
+		self->infoCSL = [[CSL alloc] initWithText:infostr
+			width:self->width
+			font:infoFont
+			color:infoColor];
+		[infostr release];
+	}
+	return self;
+}
+
+- (void)dealloc
+{
+	[self->infoCSL release];
+	[self->albumCSL release];
+	[self->artistCSL release];
+	if (self->compressedImage != nil)
+		[self->compressedImage release];
+	[super dealloc];
+}
+
+- (CGFloat)scaledImageHeight
+{
+	return self->scaledImageHeight;
+}
+
+- (CGFloat)totalTextHeight
+{
+	// TODO any extra padding maybe?
+	return [self->albumCSL height] +
+		[self->artistCSL height] +
+		[self->infoCSL height];
+}
+
+// TODO should an entire row's worth of art be drawn first, then an entire's row of text, and so on? that's how we used to do it before this class existed
+
+// TODO find a better name for the second part of this selector and its argument
+- (void)drawImageAtPoint:(NSPoint)pt withMaxArtworkHeight:(CGFloat)artHeight
+{
+	// first draw artwork
+	// the artwork will be bottom-aligned vertically
+	// TODO actually do that part
+	if (self->compressedImage == nil)
+		/* TODO draw a default image here */;
+	else {
+		NSRect r;
+
+		r.origin = pt;
+		r.size.width = self->width;
+		r.size.height = self->scaledImageHeight;
+		[self->compressedImage drawInRect:r];
+	}
+
+	pt.y += artHeight;
+	pt.y += artworkTextPadding;
+
+	// now draw text
+	[self->albumCSL drawAtPoint:pt];
+	pt.y += [self->albumCSL height];
+	[self->artistCSL drawAtPoint:pt];
+	pt.y += [self->artistCSL height];
+	[self->infoCSL drawAtPoint:pt];
+}
+
+@end
 
 CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 {
@@ -223,57 +336,6 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 		// TODO switch to an autorelease pool
 		[line retain];
 
-		compressedArtworks = [[NSMutableArray alloc] initWithCapacity:[line count]];
-		scaledSizes = [[NSMutableArray alloc] initWithCapacity:[line count]];
-		titleCSLs = [[NSMutableArray alloc] initWithCapacity:[line count]];
-		artistCSLs = [[NSMutableArray alloc] initWithCapacity:[line count]];
-		infoCSLs = [[NSMutableArray alloc] initWithCapacity:[line count]];
-		for (Album *a in line) {
-			CSL *csl;
-			NSMutableString *infostr;
-			NSString *s;
-
-			if ([a firstArtwork] == nil) {
-				[compressedArtworks addObject:[NSNull null]];
-				[scaledSizes addObject:[NSNull null]];
-			} else {
-				NSImage *compressed;
-
-				compressed = compressImage([a firstArtwork]);
-				[compressedArtworks addObject:compressed];
-				[compressed release];
-				[scaledSizes addObject:scaleImageSize([a firstArtwork], p->itemWidth)];
-			}
-			csl = [[CSL alloc] initWithText:[a album]
-				width:p->itemWidth
-				// TODO change all these titleThings to albumThings
-				font:titleFont
-				color:titleColor];
-			[titleCSLs addObject:csl];
-			[csl release];
-			csl = [[CSL alloc] initWithText:[a artist]
-				width:p->itemWidth
-				font:artistFont
-				color:artistColor];
-			[artistCSLs addObject:csl];
-			[csl release];
-			infostr = [NSMutableString new];
-			[infostr appendFormat:@"%ld", (long) [a year]];
-			[infostr appendString:@" • "];
-			// TODO song and disc count
-			[infostr appendString:@" • "];
-			s = [[a length] stringWithOnlyMinutes:p->minutesOnly];
-			[infostr appendString:s];
-			[s release];
-			csl = [[CSL alloc] initWithText:infostr
-				width:p->itemWidth
-				font:infoFont
-				color:infoColor];
-			[infoCSLs addObject:csl];
-			[csl release];
-			[infostr release];
-		}
-
 		// figure out how much vertical space we need
 		maxArtworkHeight = 0;
 		for (j = 0; j < [line count]; j++) {
@@ -293,16 +355,6 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 		}
 		maxTextHeight = 0;
 		for (j = 0; j < [line count]; j++) {
-			CSL *csl;
-			CGFloat h;
-
-			csl = (CSL *) [titleCSLs objectAtIndex:j];
-			h = [csl height];
-			// TODO any extra padding maybe
-			csl = (CSL *) [artistCSLs objectAtIndex:j];
-			h += [csl height];
-			csl = (CSL *) [infoCSLs objectAtIndex:j];
-			h += [csl height];
 			if (maxTextHeight <= h)
 				maxTextHeight = h;
 		}
@@ -332,12 +384,7 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 			obj = [compressedArtworks objectAtIndex:j];
 			if (obj == [NSNull null])
 				/* TODO draw a default image here */;
-			else {
-				img = (NSImage *) obj;
-				v = (NSValue *) [scaledSizes objectAtIndex:j];
-				r.size = [v sizeValue];
-				[img drawInRect:r];
-			}
+			else {x}
 			x += p->itemWidth + p->padding;
 		}
 		y += maxArtworkHeight;
@@ -350,16 +397,6 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 			CSL *csl;
 			CGFloat cy;
 
-			csl = (CSL *) [titleCSLs objectAtIndex:j];
-			cy = y;
-			[csl drawAt:NSMakePoint(x, cy)];
-			cy += [csl height];
-			csl = (CSL *) [artistCSLs objectAtIndex:j];
-			[csl drawAt:NSMakePoint(x, cy)];
-			cy += [csl height];
-			csl = (CSL *) [infoCSLs objectAtIndex:j];
-			[csl drawAt:NSMakePoint(x, cy)];
-			cy += [csl height];
 			x += p->itemWidth + p->padding;
 		}
 		y += maxTextHeight;
