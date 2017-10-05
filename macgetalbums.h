@@ -152,7 +152,7 @@ extern NSString *const RegexpErrDomain;
 // collector.m
 extern NSString *const CollectionParamsIncludeArtworkKey;
 extern NSString *const CollectionParamsExcludeAlbumsRegexpKey;
-typedef BOOL (*IsRealFirstTrackFunc)(id<NSObject> candidate, NSAlbum *album);
+typedef BOOL (*IsRealFirstTrackFunc)(id<NSObject> candidate, Album *album);
 typedef void (*AddArtworkFunc)(Album *a);
 @interface Collection : NSObject {
 	NSDictionary *params;

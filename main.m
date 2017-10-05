@@ -175,11 +175,13 @@ int main(int argc, char *argv[])
 	BOOL showUsage;
 	id<Collector> collector;
 	Collection *c;
+	NSMutableDictionary *params;
 	NSArray *albums;
-	Regexp *excludeAlbums;
 	Timer *timer;
 	NSError *err;
 	int optind;
+
+	params = [NSMutableDictionary new];
 
 	options = [[Options alloc] initWithArgv0:argv[0]];
 	// TODO rename -v to -d for debug?
@@ -193,15 +195,19 @@ int main(int argc, char *argv[])
 		[options usage];
 	}
 	if ([options excludeAlbumsRegexp] != NULL) {
-		excludeAlbums = [[Regexp alloc] initWithRegexp:[options excludeAlbumsRegexp]
+		Regexp *r;
+
+		r = [[Regexp alloc] initWithRegexp:[options excludeAlbumsRegexp]
 			caseInsensitive:NO
 			error:&err];
 		if (err != nil) {
-			[excludeAlbums release];
+			[r release];
 			xfprintf(stderr, @"error parsing -xb regexp %s: %@\n", [options excludeAlbumsRegexp], err);
 			[err release];
 			[options usage];
 		}
+		[params setObject:r forKey:CollectionParamsExcludeAlbumsRegexpKey];
+		[r release];
 	}
 
 	if ([options verbose])
@@ -228,7 +234,12 @@ int main(int argc, char *argv[])
 	}
 	xlogtimer(@"load iTunes library", timer, TimerLoad);
 
-	c = [collector collectTracksAndAlbumsWithArtwork:[options PDF]];
+	// only PDFs need the artwork
+	if ([options PDF])
+		[params setObject:[NSNumber numberWithBool:YES]
+			forKey:CollectionParamsIncludeArtworkKey];
+
+	c = [collector collectWithParams:params];
 	xlogtimer(@"collect tracks", timer, TimerCollect);
 	xlogtimer(@"convert tracks to our internal data structure format", timer, TimerConvert);
 
@@ -245,16 +256,6 @@ int main(int argc, char *argv[])
 	// TODO should sorts be case-insensitive, or should that be optional, or not at all?
 	albums = [c copySortedAlbums:[options sortBy]
 		reverseSort:[options reverseSort]];
-	if (excludeAlbums != nil) {
-		NSMutableArray *filtered;
-
-		filtered = [[NSMutableArray alloc] initWithCapacity:[albums count]];
-		for (Album *a in albums)
-			if (![excludeAlbums matches:[a album]])
-				[filtered addObject:a];
-		[albums release];
-		albums = filtered;
-	}
 	[timer end];
 	xlogtimer(@"sort and filter albums", timer, TimerSort);
 
@@ -303,13 +304,12 @@ int main(int argc, char *argv[])
 	}
 
 done:
-	if (excludeAlbums != nil)
-		[excludeAlbums release];
 	if (albums != nil)
 		[albums release];
 	[c release];
 	[collector release];
 	[timer release];
 	[options release];
+	[params release];
 	return 0;
 }
