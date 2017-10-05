@@ -37,6 +37,7 @@ LDFLAGS = \
 	-framework CoreFoundation \
 	-framework Foundation \
 	-framework AppKit \
+	-framework CoreGraphics \
 	-framework ScriptingBridge \
 	-framework Security
 

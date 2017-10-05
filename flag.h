@@ -15,6 +15,8 @@
 - (BOOL)valueOfBoolFlag:(NSString *)name;
 + (void)addStringFlag:(NSString *)name defaultValue:(const char *)defaultValue helpText:(NSString *)helpText;
 - (const char *)valueOfStringFlag:(NSString *)name;
++ (void)addCGFloat:(NSString *)name defaultValue:(CGFloat)defaultValue helpText:(NSString *)helpText;
+- (CGFloat)valueOfCGFloatFlag:(NSString *)name;
 
 // Returns the number of entries of list processed; you can add that to list and subtract it from n to get the non-flag arguments.
 // TODO const-correct this properly; "const char **" isn't enough (throws a warning) but isn't it usually const char *argv[] or const char **argv in main()?
@@ -62,3 +64,5 @@
 	AddFlag(cls, selector, name, BOOL, Bool, NO, help)
 #define AddStringFlag(cls, selector, name, defval, help) \
 	AddFlag(cls, selector, name, const char *, String, defval, help)
+#define AddCGFloatFlag(cls, selector, name, defval, help) \
+	AddFlag(cls, selector, name, CGFloat, CGFloat, defval, help)

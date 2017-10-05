@@ -17,7 +17,7 @@
 - (NSString *)helpText;
 - (BOOL)takesArgument;
 - (NSString *)argumentDescription;
-- (NSValue *)valueWithArgument:(const char *)arg;
+- (NSValue *)valueWithArgument:(const char *)arg errorCopy:(NSError **)err;
 @end
 
 @implementation flag
@@ -71,7 +71,7 @@
 	return nil;
 }
 
-- (NSValue *)valueWithArgument:(const char *)arg
+- (NSValue *)valueWithArgument:(const char *)arg errorCopy:(NSError **)err
 {
 	[self doesNotRecognizeSelector:_cmd];
 	return nil;
@@ -97,8 +97,9 @@
 	return NO;
 }
 
-- (NSValue *)valueWithArgument:(const char *)arg
+- (NSValue *)valueWithArgument:(const char *)arg errorCopy:(NSError **)err
 {
+	*err = nil;
 	return [NSNumber numberWithBool:YES];
 }
 
@@ -127,9 +128,68 @@
 	return @"string";
 }
 
-- (NSValue *)valueWithArgument:(const char *)arg
+- (NSValue *)valueWithArgument:(const char *)arg errorCopy:(NSError **)err
 {
+	*err = nil;
 	return [NSValue valueWithPointer:arg];
+}
+
+@end
+
+@interface cgFloatFlag : flag
+- (id)initWithName:(NSString *)n defaultCGFloat:(CGFloat)df helpText:(NSString *)ht;
+@end
+
+#if CGFLOAT_IS_DOUBLE
+#define cgFloatValue(x) [NSNumber numberWithDouble:((double) (x))]
+#define cgFloatFromValue(x) ((CGFloat) [(x) doubleValue])
+#define cgFloatParseFunc strtod
+#else
+#define cgFloatValue(x) [NSNumber numberWithFloat:((float) (x))]
+#define cgFloatFromValue(x) ((CGFloat) [(x) floatValue])
+#define cgFloatParseFunc strtof
+#endif
+
+@implementation cgFloatFlag
+
+- (id)initWithName:(NSString *)n defaultCGFloat:(CGFloat)df helpText:(NSString *)ht
+{
+	return [super initWithName:n
+		defaultValue:cgFloatValue(df)
+		helpText:ht];
+}
+
+- (BOOL)takesArgument
+{
+	return YES;
+}
+
+- (NSString *)argumentDescription
+{
+	return @"(floating-point number)";
+}
+
+- (NSValue *)valueWithArgument:(const char *)arg errorCopy:(NSError **)err
+{
+	CGFloat f;
+	char *end;
+
+	*err = nil;
+	f = (CGFloat) cgFloatParseFunc(arg, &end);
+	if (*end != '\0') {
+		NSString *errstr;
+		NSDictionary *userInfo;
+
+		errstr = [[NSString alloc] initWithFormat:@"%s is not a valid floating-point number", arg];
+		userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:errstr, NSLocalizedDescriptionKey, nil];
+		[msg release];
+		*err = [[NSError alloc] initWithDomain:NSCocoaErrorDomain
+			code:NSFormattingError
+			userInfo:userInfo];
+		[userInfo release];
+		return nil;
+	}
+	return cgFloatValue(f);
 }
 
 @end
@@ -292,6 +352,8 @@ static void registerSubclass(Class subclass)
 	NSData *optnamedata;
 	NSString *optnamestr;
 	const char *optarg;
+	id argvalue;
+	NSError *argerr;
 	NSDictionary *cf;
 	flag *f;
 	int i;
@@ -357,8 +419,13 @@ static void registerSubclass(Class subclass)
 			optarg = list[i];
 		}
 
-		[self->flagValues setObject:[f valueWithArgument:optarg]
-			forKey:optnamestr];
+		argvalue = [f valueWithArgument:optarg errorCopy:&argerr];
+		if (argerr != nil) {
+			xfprintf(stderr, @"error parsing -%@ argument %s: %@\n", optnamestr, optarg, argerr);
+			[argerr release];
+			[self usage];
+		}
+		[self->flagValues setObject:argvalue forKey:optnamestr];
 
 		[optnamestr release];
 	}
