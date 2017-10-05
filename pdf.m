@@ -1,10 +1,8 @@
 // 25 september 2017
 #import "macgetalbums.h"
 
-#define margins 72.0
 // TODO rename this to albumWidth?
 #define itemWidth 108.0
-#define padding 18.0
 #define artworkTextPadding 4.5
 
 // TODO save the text matrix
@@ -200,8 +198,8 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 		CGFloat paddings;
 
 		items = itemWidth * (CGFloat) nPerLine;
-		paddings = padding * (CGFloat) (nPerLine - 1);
-		if ((margins + items + padding) >= (p->pageWidth - margins - itemWidth))
+		paddings = p->padding * (CGFloat) (nPerLine - 1);
+		if ((p->margins + items + p->padding) >= (p->pageWidth - p->margins - itemWidth))
 			break;
 		nPerLine++;
 	}
@@ -313,18 +311,18 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 		lineHeight = maxArtworkHeight + artworkTextPadding + maxTextHeight;
 
 		// set up a page if needed
-		if (nc != nil && (y + lineHeight) >= (p->pageHeight - margins)) {
+		if (nc != nil && (y + lineHeight) >= (p->pageHeight - p->margins)) {
 			endPageContext(c, nc, prev);
 			nc = nil;
 			prev = nil;
 		}
 		if (nc == nil) {
 			nc = mkPageContext(c, &prev, p->pageHeight);
-			y = margins;
+			y = p->margins;
 		}
 
 		// lay out the artworks
-		x = margins;
+		x = p->margins;
 		for (j = 0; j < [line count]; j++) {
 			id obj;
 			NSImage *img;
@@ -342,14 +340,14 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 				r.size = [v sizeValue];
 				[img drawInRect:r];
 			}
-			x += itemWidth + padding;
+			x += itemWidth + p->padding;
 		}
 		y += maxArtworkHeight;
 
 		y += artworkTextPadding;
 
 		// lay out the texts
-		x = margins;
+		x = p->margins;
 		for (j = 0; j < [line count]; j++) {
 			CSL *csl;
 			CGFloat cy;
@@ -364,11 +362,11 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 			csl = (CSL *) [infoCSLs objectAtIndex:j];
 			[csl drawAt:NSMakePoint(x, cy)];
 			cy += [csl height];
-			x += itemWidth + padding;
+			x += itemWidth + p->padding;
 		}
 		y += maxTextHeight;
 
-		y += padding;
+		y += p->padding;
 		i += [line count];
 
 		[infoCSLs release];

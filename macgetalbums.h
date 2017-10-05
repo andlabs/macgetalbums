@@ -203,7 +203,8 @@ struct makePDFParams {
 	BOOL minutesOnly;
 	CGFloat pageWidth;
 	CGFloat pageHeight;
-	CGFloat pageMargins;
+	CGFloat margins;
+	CGFloat padding;
 };
 extern CFDataRef makePDF(NSArray *albums, struct makePDFParams *p);
 

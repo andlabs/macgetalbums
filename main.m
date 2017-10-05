@@ -33,6 +33,10 @@ AddCGFloatFlag(Options, pdfPageWidth,
 	@"pdfpagewidth", 612.0, @"width of pages in the output PDF, in units of 1/72-inch points (default 612.0 for 8.5in)")
 AddCGFloatFlag(Options, pdfPageHeight,
 	@"pdfpageheight", 792.0, @"height of pages in the output PDF, in units of 1/72-inch points (default 792.0 for 11in)")
+AddCGFloatFlag(Options, pdfMargins,
+	@"pdfmargins", 72.0, @"margins on all sides of pages in the output PDF, in units of 1/72-inch points (default 72.0 for 1in)")
+AddCGFloatFlag(Options, pdfPadding,
+	@"pdfpadding", 18.0, @"padding between albums in both directions in the output PDF in units of 1/72-inch points (default 18.0 for 0.25in)")
 
 static BOOL usagePrintCollectors(NSString *name, Class<Collector> class, void *data)
 {
@@ -272,6 +276,8 @@ int main(int argc, char *argv[])
 		p.minutesOnly = [options minutes];
 		p.pageWidth = [options pdfPageWidth];
 		p.pageHeight = [options pdfPageHeight];
+		p.margins = [options pdfMargins];
+		p.padding = [options pdfPadding];
 		data = makePDF(albums, &p);
 		buf = CFDataGetBytePtr(data);
 		len = CFDataGetLength(data);
