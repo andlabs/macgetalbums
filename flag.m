@@ -345,7 +345,7 @@ static void registerSubclass(Class subclass)
 	return (const char *) [v pointerValue];
 }
 
-+ (void)addCGFloat:(NSString *)name defaultValue:(CGFloat)defaultValue helpText:(NSString *)helpText
++ (void)addCGFloatFlag:(NSString *)name defaultValue:(CGFloat)defaultValue helpText:(NSString *)helpText
 {
 	NSMutableDictionary *cf;
 	cgFloatFlag *f;

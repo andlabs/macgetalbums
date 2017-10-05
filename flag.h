@@ -28,7 +28,7 @@ typedef float CGFloat;
 - (BOOL)valueOfBoolFlag:(NSString *)name;
 + (void)addStringFlag:(NSString *)name defaultValue:(const char *)defaultValue helpText:(NSString *)helpText;
 - (const char *)valueOfStringFlag:(NSString *)name;
-+ (void)addCGFloat:(NSString *)name defaultValue:(CGFloat)defaultValue helpText:(NSString *)helpText;
++ (void)addCGFloatFlag:(NSString *)name defaultValue:(CGFloat)defaultValue helpText:(NSString *)helpText;
 - (CGFloat)valueOfCGFloatFlag:(NSString *)name;
 
 // Returns the number of entries of list processed; you can add that to list and subtract it from n to get the non-flag arguments.

@@ -263,11 +263,16 @@ int main(int argc, char *argv[])
 	xlogtimer(@"sort albums", timer, TimerSort);
 
 	if ([options PDF]) {
+		struct makePDFParams p;
 		CFDataRef data;
 		const UInt8 *buf;
 		CFIndex len;
 
-		data = makePDF(albums, [options minutes]);
+		memset(&p, 0, sizeof (struct makePDFParams));
+		p.minutesOnly = [options minutes];
+		p.pageWidth = [options pdfPageWidth];
+		p.pageHeight = [options pdfPageHeight];
+		data = makePDF(albums, &p);
 		buf = CFDataGetBytePtr(data);
 		len = CFDataGetLength(data);
 		// TODO check error
