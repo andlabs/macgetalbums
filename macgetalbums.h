@@ -152,8 +152,8 @@ extern NSString *const RegexpErrDomain;
 // collector.m
 extern NSString *const CollectionParamsIncludeArtworkKey;
 extern NSString *const CollectionParamsExcludeAlbumsRegexpKey;
-typedef BOOL (*IsRealFirstTrackFunc)(id<NSObject> candidate, NSAlbum *a);
-typedef void (*AddAlbumArtworkFunc)(Album *a);
+typedef BOOL (*IsRealFirstTrackFunc)(id<NSObject> candidate, NSAlbum *album);
+typedef void (*AddArtworkFunc)(Album *a);
 @interface Collection : NSObject {
 	NSDictionary *params;
 	NSMutableArray *tracks;
@@ -161,8 +161,8 @@ typedef void (*AddAlbumArtworkFunc)(Album *a);
 	Duration *totalDuration;
 }
 - (id)initWithParams:(NSDictionary *)p trackCount:(NSUInteger)trackCount;
-- (BOOL)addTrack:(Track *)t withFirstTrack:(id<NSObject>)firstTrack isRealFirstTrackFunc:(ISRealFirstTrackFunc)f;
-- (void)addArtworksAndReleaseFirstTracks:(AddAlbumArtworkFunc)f;
+- (void)addTrack:(Track *)t withFirstTrack:(id<NSObject>)firstTrack isRealFirstTrackFunc:(IsRealFirstTrackFunc)f;
+- (void)addArtworksAndReleaseFirstTracks:(AddArtworkFunc)f;
 - (NSArray *)tracks;
 - (NSSet *)albums;
 - (Duration *)totalDuration;

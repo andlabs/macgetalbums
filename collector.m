@@ -57,7 +57,7 @@ static const struct {
 	[super dealloc];
 }
 
-- (BOOL)addTrack:(Track *)t withFirstTrack:(id<NSObject>)firstTrack isRealFirstTrackFunc:(IsRealFirstTrackFunc)f
+- (void)addTrack:(Track *)t withFirstTrack:(id<NSObject>)firstTrack isRealFirstTrackFunc:(IsRealFirstTrackFunc)f
 {
 	Regexp *r;
 	Album *a;
@@ -65,7 +65,7 @@ static const struct {
 	// do we exclude this album?
 	r = paramsExcludeAlbumsRegexp(self->params);
 	if (r != nil && [r matches:[t album]])
-		return NO;
+		return;
 
 	// okay, we're good to add the track
 	[self->tracks addObect:t];
@@ -74,10 +74,9 @@ static const struct {
 	if ([a firstTrack] == nil || (*f)(firstTrack, a))
 		[a setFirstTrack:firstTrack];
 	[self->totalDuration add:[t length]];
-	return YES;
 }
 
-- (void)addArtworksAndReleaseFirstTracks:(AddAlbumArtworkFunc)f
+- (void)addArtworksAndReleaseFirstTracks:(AddArtworkFunc)f
 {
 	BOOL withArtwork;
 
