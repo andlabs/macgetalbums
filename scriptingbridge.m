@@ -1,14 +1,39 @@
 // 22 august 2017
 #import "macgetalbums.h"
 
-static BOOL trackEarlierThan(iTunesTrack *a, iTunesTrack *b)
+static BOOL isRealFirstTrack(id<NSObject> candidate, Album *album)
 {
+	iTunesTrack *a, *b;
+
+	a = (iTunesTrack *) candidate;
+	b = (iTunesTrack *) [album firstTrack];
 	if ([a discNumber] > [b discNumber])
 		return NO;
 	if ([a discNumber] < [b discNumber])
 		return YES;
 	// same disc; earlier track?
 	return [a trackNumber] < [b trackNumber];
+}
+
+static void addArtwork(Album *a)
+{
+	iTunesTrack *firstTrack;
+	SBElementArray *artworks;
+	iTunesArtwork *artwork;
+
+	firstTrack = (iTunesTrack *) [a firstTrack];
+	artworks = [firstTrack artworks];
+	artwork = nil;
+	if ([artworks count] > 0)
+		artwork = (iTunesArtwork *) [artworks objectAtIndex:0];
+	if (artwork != nil) {
+		// TODO why is -[artwork data] a NSAppleEventDescriptor?
+		NSImage *img;
+
+		img = [[NSImage alloc] initWithData:[artwork rawData]];
+		[a setFirstArtwork:img];
+		[img release];
+	}
 }
 
 // TODO figure out how far back we can have ivars in @implementation
@@ -61,15 +86,10 @@ static BOOL trackEarlierThan(iTunesTrack *a, iTunesTrack *b)
 	[super dealloc];
 }
 
-- (Collection *)collectTracksAndAlbumsWithArtwork:(BOOL)withArtwork
+- (Collection *)collectWithParams:(NSDictionary *)p
 {
-	Collection *ret;
-	NSMutableArray *tracksOut;
-	NSMutableSet *albumsOut;
-	Duration *totalDuration;
+	Collection *c;
 	NSUInteger i, nTracks;
-
-	totalDuration = [[Duration alloc] initWithMilliseconds:0];
 
 	@autoreleasepool {
 		// all of these variables are either autoreleased or not owned by us, judging from sample code and Cocoa memory management rules and assumptions about what methods get called by sdp-generated headers
@@ -107,14 +127,12 @@ static BOOL trackEarlierThan(iTunesTrack *a, iTunesTrack *b)
 		[self->timer end];
 
 		[self->timer start:TimerConvert];
-		tracksOut = [[NSMutableArray alloc] initWithCapacity:nTracks];
-		albumsOut = [[NSMutableSet alloc] initWithCapacity:nTracks];
+		c = [[Collection alloc] initWithParams:p
+			trackCount:nTracks];
 		for (i = 0; i < nTracks; i++) {
 			iTunesTrack *track;
 			Track *trackOut;
-			Album *albumOut;
 			struct trackParams p;
-			iTunesTrack *firstTrack;
 
 			track = (iTunesTrack *) [tracks objectAtIndex:i];
 
@@ -141,59 +159,20 @@ static BOOL trackEarlierThan(iTunesTrack *a, iTunesTrack *b)
 			p.artworkCount = [[track artworks] count];
 			trackOut = [[Track alloc] initWithParams:&p
 				lengthSeconds:doubleAtIndex(allDurations, i)];
-			[totalDuration add:[trackOut length]];
 
-			[tracksOut addObject:trackOut];
-			albumOut = albumInSet(albumsOut,
-				[trackOut artist],
-				[trackOut album]);
-			[albumOut addTrack:trackOut];
-			// we only want album artwork from the first track
-			firstTrack = (iTunesTrack *) [albumOut firstTrack];
-			if (firstTrack == nil || !trackEarlierThan(firstTrack, track))
-				[albumOut setFirstTrack:track];
-			[albumOut release];
-
+			[c addTrack:trackOut
+				withFirstTrack:track
+				isRealFirstTrackFunc:isRealFirstTrack];
 			[trackOut release];		// and release the initial reference
 		}
 
 		// now collect album artworks
 		// even if we aren't, we should release our firstTracks anyway
-		for (Album *a in albumsOut) {
-			iTunesTrack *firstTrack;
-
-			firstTrack = (iTunesTrack *) [a firstTrack];
-			if (firstTrack == nil)
-				continue;
-			if (withArtwork) {
-				SBElementArray *artworks;
-				iTunesArtwork *artwork;
-
-				artworks = [firstTrack artworks];
-				artwork = nil;
-				if ([artworks count] > 0)
-					artwork = (iTunesArtwork *) [artworks objectAtIndex:0];
-				if (artwork != nil) {
-					// TODO why is -[artwork data] a NSAppleEventDescriptor?
-					NSImage *img;
-
-					img = [[NSImage alloc] initWithData:[artwork rawData]];
-					[a setFirstArtwork:img];
-					[img release];
-				}
-			}
-			[a setFirstTrack:nil];
-		}
+		[c addArtworksAndReleaseFirstTracks:addArtwork];
 		[self->timer end];
 	}
 
-	ret = [[Collection alloc] initWithTracks:tracksOut
-		albums:albumsOut
-		totalDuration:totalDuration];
-	[totalDuration release];
-	[albumsOut release];
-	[tracksOut release];
-	return ret;
+	return c;
 }
 
 @end
