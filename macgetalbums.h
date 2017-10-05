@@ -21,17 +21,6 @@
 #import "iTunes.h"
 #import "flag.h"
 
-// CGFloat seems to have been introduced in 10.5, and all versions prior seemed to just use float everywhere unconditionally
-#ifndef CGFLOAT_DEFINED
-#define CGFLOAT_DEFINED 0
-#endif
-#if !CGFLOAT_DEFINED
-typedef float CGFloat;
-#define CGFLOAT_IS_DOUBLE 0
-#define CGFLOAT_MIN FLT_MIN
-#define CGFLOAT_MAX FLT_MAX
-#endif
-
 // damn MacTypes.h already having a Duration
 #define Duration mgaDuration
 // oh come on, CarbonCore.framework took this name too!

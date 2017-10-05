@@ -1,5 +1,18 @@
 // 1 october 2017
 #import <Foundation/Foundation.h>
+// TODO is this included by Foundation/Foundation.h on 10.5? (it must be for NSValue's CGGeometry methods, but that depends on when those were introduced)
+#import <CoreGraphics/CGBase.h>
+
+// CGFloat seems to have been introduced in 10.5, and all versions prior seemed to just use float everywhere unconditionally
+#ifndef CGFLOAT_DEFINED
+#define CGFLOAT_DEFINED 0
+#endif
+#if !CGFLOAT_DEFINED
+typedef float CGFloat;
+#define CGFLOAT_IS_DOUBLE 0
+#define CGFLOAT_MIN FLT_MIN
+#define CGFLOAT_MAX FLT_MAX
+#endif
 
 // flag.m
 @interface FlagSet : NSObject {

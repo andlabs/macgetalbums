@@ -266,7 +266,7 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 			[infostr appendString:@" • "];
 			// TODO song and disc count
 			[infostr appendString:@" • "];
-			s = [[a length] stringWithOnlyMinutes:onlyMinutes];
+			s = [[a length] stringWithOnlyMinutes:p->minutesOnly];
 			[infostr appendString:s];
 			[s release];
 			csl = [[CSL alloc] initWithText:infostr

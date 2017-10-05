@@ -182,7 +182,7 @@
 
 		errstr = [[NSString alloc] initWithFormat:@"%s is not a valid floating-point number", arg];
 		userInfo = [[NSDictionary alloc] initWithObjectsAndKeys:errstr, NSLocalizedDescriptionKey, nil];
-		[msg release];
+		[errstr release];
 		*err = [[NSError alloc] initWithDomain:NSCocoaErrorDomain
 			code:NSFormattingError
 			userInfo:userInfo];
@@ -343,6 +343,32 @@ static void registerSubclass(Class subclass)
 	v = (NSValue *) [self->flagValues objectForKey:name];
 	mustExist(name, v);
 	return (const char *) [v pointerValue];
+}
+
++ (void)addCGFloat:(NSString *)name defaultValue:(CGFloat)defaultValue helpText:(NSString *)helpText
+{
+	NSMutableDictionary *cf;
+	cgFloatFlag *f;
+
+	mustSubclass();
+	mustNotBeFinished();
+	registerSubclass(self);
+	cf = (NSMutableDictionary *) [flags objectForKey:self];
+	mustBeUnique(cf, name);
+	f = [[cgFloatFlag alloc] initWithName:name
+		defaultCGFloat:defaultValue
+		helpText:helpText];
+	[cf setObject:f forKey:name];
+	[f release];
+}
+
+- (CGFloat)valueOfCGFloatFlag:(NSString *)name
+{
+	NSNumber *n;
+
+	n = (NSNumber *) [self->flagValues objectForKey:name];
+	mustExist(name, n);
+	return cgFloatFromValue(n);
 }
 
 - (int)parseStringList:(char **)list count:(int)n
