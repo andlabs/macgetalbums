@@ -42,7 +42,7 @@ static const struct {
 		self->params = p;
 		[self->params retain];
 		self->tracks = [[NSMutableArray alloc] initWithCapacity:trackCount];
-		self->albums = [[NSMutableArray alloc] initWithCapacity:trackCount];
+		self->albums = [[NSMutableSet alloc] initWithCapacity:trackCount];
 		self->totalDuration = [[Duration alloc] initWithMilliseconds:0];
 	}
 	return self;
@@ -68,7 +68,7 @@ static const struct {
 		return;
 
 	// okay, we're good to add the track
-	[self->tracks addObect:t];
+	[self->tracks addObject:t];
 	a = albumInSet(self->albums, [t artist], [t album]);
 	[a addTrack:t];
 	if ([a firstTrack] == nil || (*f)(firstTrack, a))
@@ -84,7 +84,7 @@ static const struct {
 	for (Album *a in self->albums) {
 		if ([a firstTrack] == nil)
 			continue;
-		if (addArtwork)
+		if (withArtwork)
 			(*f)(a);
 		[a setFirstTrack:nil];
 	}

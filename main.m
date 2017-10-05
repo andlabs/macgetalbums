@@ -257,7 +257,7 @@ int main(int argc, char *argv[])
 	albums = [c copySortedAlbums:[options sortBy]
 		reverseSort:[options reverseSort]];
 	[timer end];
-	xlogtimer(@"sort and filter albums", timer, TimerSort);
+	xlogtimer(@"sort albums", timer, TimerSort);
 
 	if ([options PDF]) {
 		CFDataRef data;
