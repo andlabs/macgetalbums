@@ -20,6 +20,10 @@ static const struct {
 	// (the 25th anniversary of the original film's release).
 	{ 2007, @"Vangelis", @"Blade Runner Trilogy" },
 
+	// For whatever reason, each track on this one is dated with
+	// the year the song was *first written*.
+	{ 1981, @"Stevie Nicks", @"Bella Donna" },
+
 	{ 0, nil, nil },
 };
 
