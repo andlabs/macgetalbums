@@ -406,6 +406,34 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 			[c beginPage];
 			x = p->margins;
 			y = p->margins;
+			if (p->debugLayout) {
+				[NSGraphicsContext saveGraphicsState];
+				@autoreleasepool {
+					NSBezierPath *path;
+					CGFloat ly;
+
+					[[NSColor grayColor] set];
+					ly = y;
+					path = [NSBezierPath bezierPath];
+					[path moveToPoint:NSMakePoint(0, ly)];
+					[path lineToPoint:NSMakePoint(p->pageWidth, ly)];
+					[path stroke];
+					ly += maxImageHeight;
+					path = [NSBezierPath bezierPath];
+					[path moveToPoint:NSMakePoint(0, ly)];
+					[path lineToPoint:NSMakePoint(p->pageWidth, ly)];
+					[path stroke];
+					ly += artworkTextPadding;
+					[path moveToPoint:NSMakePoint(0, ly)];
+					[path lineToPoint:NSMakePoint(p->pageWidth, ly)];
+					[path stroke];
+					ly += maxTextHeight;
+					[path moveToPoint:NSMakePoint(0, ly)];
+					[path lineToPoint:NSMakePoint(p->pageWidth, ly)];
+					[path stroke];
+				}
+				[NSGraphicsContext restoreGraphicsState];
+			}
 		}
 
 		[item drawAtPoint:NSMakePoint(x, y)
@@ -418,6 +446,35 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 			x = p->margins;
 			y += lineHeight;
 			y += p->padding;
+			if (p->debugLayout) {
+				// TODO deduplicate
+				[NSGraphicsContext saveGraphicsState];
+				@autoreleasepool {
+					NSBezierPath *path;
+					CGFloat ly;
+
+					[[NSColor grayColor] set];
+					ly = y;
+					path = [NSBezierPath bezierPath];
+					[path moveToPoint:NSMakePoint(0, ly)];
+					[path lineToPoint:NSMakePoint(p->pageWidth, ly)];
+					[path stroke];
+					ly += maxImageHeight;
+					path = [NSBezierPath bezierPath];
+					[path moveToPoint:NSMakePoint(0, ly)];
+					[path lineToPoint:NSMakePoint(p->pageWidth, ly)];
+					[path stroke];
+					ly += artworkTextPadding;
+					[path moveToPoint:NSMakePoint(0, ly)];
+					[path lineToPoint:NSMakePoint(p->pageWidth, ly)];
+					[path stroke];
+					ly += maxTextHeight;
+					[path moveToPoint:NSMakePoint(0, ly)];
+					[path lineToPoint:NSMakePoint(p->pageWidth, ly)];
+					[path stroke];
+				}
+				[NSGraphicsContext restoreGraphicsState];
+			}
 		}
 	}
 	if (inPage)
