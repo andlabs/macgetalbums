@@ -3,20 +3,73 @@
 
 #define artworkTextPadding 4.5
 
-// TODO save the text matrix
-static NSGraphicsContext *mkPageContext(CGContextRef c, NSGraphicsContext **prev, CGFloat height)
+// TODO allocate and own data ourself?
+@interface pdfContext : NSObject {
+	CGDataConsumerRef dataConsumer;
+	CGContextRef c;
+	CGFloat pageHeight;
+	NSGraphicsContext *prev;
+	NSGraphicsContext *cur;
+}
+- (id)initWithTarget:(CFMutableDataRef)data pageWidth:(CGFloat)pw pageHeight:(CGFloat)ph;
+- (void)beginPage;
+- (void)endPage;
+- (void)end;
+@end
+
+@implementation pdfContext
+
+- (id)initWithTarget:(CFMutableDataRef)data pageWidth:(CGFloat)pw pageHeight:(CGFloat)ph
 {
-	NSGraphicsContext *new;
+	self = [super init];
+	if (self) {
+		CGRect mediaBox;
 
-	CGContextSaveGState(c);
-	CGContextBeginPage(c, NULL);
+		self->stack = NULL;
+		self->c = NULL;
+		self->pageHeight = ph;
+		self->prev = nil;
+		self->cur = nil;
 
-	CGContextSaveGState(c);
-	*prev = [NSGraphicsContext currentContext];
-	if (*prev != nil) {
-		[*prev saveGraphicsState];
-		[*prev retain];
+		self->dataConsumer = CGDataConsumerCreateWithCFData(data);
+		// self->dataConsumer will retain data, according to the Programming Quartz book code samples
+		mediaBox = CGRectMake(0, 0, pw, self->pageHeight);
+		self->c = CGPDFContextCreate(self->dataConsumer, &mediaBox, NULL);
+		if (self->c == NULL) {
+			// TODO produce an error
+			CGDataConsumerRelease(self->dataConsumer);
+			self->dataConsumer = NULL;
+			goto out;
+		}
 	}
+out:
+	return self;
+}
+
+// TODO throw exceptions instead of silently fixing broken stuff
+
+- (void)dealloc
+{
+	[self end];
+	[super dealloc];
+}
+
+// TODO save the text matrix
+- (void)beginPage
+{
+	if (self->cur != nil)
+		[self endPage];
+
+	CGContextSaveGState(self->c);
+	CGContextBeginPage(self->c, NULL);
+
+	CGContextSaveGState(self->c);
+	self->prev = [NSGraphicsContext currentContext];
+	if (self->prev != nil) {
+		[self->prev saveGraphicsState];
+		[self->prev retain];
+	}
+
 	// PDF contexts, like other Core Graphics contexts, are flipped
 	// NSLayoutManager expects to draw in a flipped context (otherwise lines flow in reverse order)
 	// so let's make NSGraphicsContext think our context is a genuine flipped context
@@ -25,32 +78,51 @@ static NSGraphicsContext *mkPageContext(CGContextRef c, NSGraphicsContext **prev
 	// - bayoubengal in irc.freenode.net #macdev
 	// - https://stackoverflow.com/questions/6404057/create-pdf-in-objective-c
 	// - https://developer.apple.com/library/content/documentation/GraphicsImaging/Conceptual/drawingwithquartz2d/dq_context/dq_context.html (moreso the note about iOS but it applies here too)
-	CGContextTranslateCTM(c, 0, height);
-	CGContextScaleCTM(c, 1.0, -1.0);
+	CGContextTranslateCTM(self->c, 0, self->pageHeight);
+	CGContextScaleCTM(self->c, 1.0, -1.0);
 	// and do this too just to be safe
-	CGContextSetTextMatrix(c, CGAffineTransformIdentity);
-	new = [NSGraphicsContext graphicsContextWithGraphicsPort:c flipped:YES];
-	[new retain];
-	[NSGraphicsContext setCurrentContext:new];
-	[new saveGraphicsState];
-	return new;
+	CGContextSetTextMatrix(self->c, CGAffineTransformIdentity);
+
+	self->cur = [NSGraphicsContext graphicsContextWithGraphicsPort:self->c flipped:YES];
+	[self->cur retain];
+	[NSGraphicsContext setCurrentContext:self->cur];
+	[self->cur saveGraphicsState];
 }
 
-static void endPageContext(CGContextRef c, NSGraphicsContext *nc, NSGraphicsContext *prev)
+- (void)endPage
 {
-	[nc restoreGraphicsState];
-	[NSGraphicsContext setCurrentContext:prev];
-	if (prev != nil) {
-		[prev restoreGraphicsState];
-		[prev release];
-	}
-	[nc release];
-	// this resets the CTM flipping done with mkPageContext()
-	CGContextRestoreGState(c);
+	if (self->cur == nil)
+		/* TODO throw exception as above */;
 
-	CGContextEndPage(c);
-	CGContextRestoreGState(c);
+	[self->cur restoreGraphicsState];
+	[NSGraphicsContext setCurrentContext:self->prev];
+	if (self->prev != nil) {
+		[self->prev restoreGraphicsState];
+		[self->prev release];
+		self->prev = nil;
+	}
+	[self->cur release];
+	self->cur = nil;
+	// this resets the CTM flipping done in -beginPage above
+	CGContextRestoreGState(self->c);
+
+	CGContextEndPage(self->c);
+	CGContextRestoreGState(self->c);
 }
+
+- (void)end
+{
+	if (self->cur != nil)
+		/* TODO throw exception as above */;
+
+	CGPDFContextClose(self->c);
+	CGContextRelease(self->c);
+	self->c = NULL;
+	CGDataConsumerRelease(self->dataConsumer);
+	self->dataConsumer = NULL;
+}
+
+@end
 
 // based on https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/TextLayout/Tasks/StringHeight.html#//apple_ref/doc/uid/20001809-CJBGBIBB and https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/TextLayout/Tasks/DrawingStrings.html#//apple_ref/doc/uid/20001808-SW4
 @interface CSL : NSObject {
@@ -277,16 +349,6 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 		// TODO produce an error
 		return NULL;
 	}
-	consumer = CGDataConsumerCreateWithCFData(data);
-	// consumer will retain data, according to the Programming Quartz book code samples
-	mediaBox = CGRectMake(0, 0, p->pageWidth, p->pageHeight);
-	c = CGPDFContextCreate(consumer, &mediaBox, NULL);
-	if (c == NULL) {
-		// TODO produce an error
-		CGDataConsumerRelease(consumer);
-		CFRelease(data);
-		return NULL;
-	}
 
 	// TODO switch to an autorelease pool
 	titleFont = [NSFont boldSystemFontOfSize:12];
@@ -425,8 +487,5 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 	[titleColor release];
 	[titleFont release];
 
-	CGPDFContextClose(c);
-	CGContextRelease(c);
-	CGDataConsumerRelease(consumer);
 	return data;
 }
