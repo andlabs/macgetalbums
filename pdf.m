@@ -310,13 +310,13 @@ static NSString *albumInfoString(Album *a, BOOL minutesOnly)
 {
 	// first draw artwork
 	// the artwork will be bottom-aligned vertically
-	// TODO actually do that part
 	if (self->compressedImage == nil)
 		/* TODO draw a default image here */;
 	else {
 		NSRect r;
 
 		r.origin = pt;
+		r.origin.y += (artHeight - self->scaledImageHeight);
 		r.size.width = self->width;
 		r.size.height = self->scaledImageHeight;
 		[self->compressedImage drawInRect:r];
