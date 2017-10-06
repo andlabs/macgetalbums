@@ -25,7 +25,6 @@
 	if (self) {
 		CGRect mediaBox;
 
-		self->stack = NULL;
 		self->c = NULL;
 		self->pageHeight = ph;
 		self->prev = nil;
@@ -51,7 +50,7 @@ out:
 
 - (void)dealloc
 {
-	[self end];
+	// TODO throw an exception if self->c is not NULL
 	[super dealloc];
 }
 
@@ -218,6 +217,7 @@ static CGFloat scaleHeight(NSSize orig, CGFloat newWidth)
 static NSString *albumInfoString(Album *a, BOOL minutesOnly)
 {
 	NSMutableString *infostr;
+	NSString *s;
 
 	infostr = [NSMutableString new];
 	[infostr appendFormat:@"%ld", (long) [a year]];
@@ -306,7 +306,7 @@ static NSString *albumInfoString(Album *a, BOOL minutesOnly)
 // TODO should an entire row's worth of art be drawn first, then an entire's row of text, and so on? that's how we used to do it before this class existed
 
 // TODO find a better name for the second part of this selector and its argument
-- (void)drawImageAtPoint:(NSPoint)pt withMaxArtworkHeight:(CGFloat)artHeight
+- (void)drawAtPoint:(NSPoint)pt withMaxArtworkHeight:(CGFloat)artHeight
 {
 	// first draw artwork
 	// the artwork will be bottom-aligned vertically
@@ -373,7 +373,7 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 	albumItems = [[NSMutableArray alloc] initWithCapacity:[albums count]];
 	maxImageHeight = 0;
 	maxTextHeight = 0;
-	for (Album *a in albumItems) {
+	for (Album *a in albums) {
 		pdfAlbumItem *item;
 
 		item = [[pdfAlbumItem alloc] initWithAlbum:a
@@ -395,7 +395,7 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 	lineHeight = maxImageHeight + artworkTextPadding + maxTextHeight;
 
 	inPage = NO;
-	for (pdfAlbumItem *item in items) {
+	for (pdfAlbumItem *item in albumItems) {
 		// set up a page if needed
 		if (inPage && (y + lineHeight) >= (p->pageHeight - p->margins)) {
 			[c endPage];
@@ -429,8 +429,8 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 	[infoFont release];
 	[artistColor release];
 	[artistFont release];
-	[titleColor release];
-	[titleFont release];
+	[albumColor release];
+	[albumFont release];
 
 	[c end];
 	[c release];
