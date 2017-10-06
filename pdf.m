@@ -41,6 +41,7 @@
 			self->dataConsumer = NULL;
 			goto out;
 		}
+		CGContextSaveGState(self->c);
 	}
 out:
 	return self;
@@ -115,6 +116,7 @@ out:
 	if (self->cur != nil)
 		/* TODO throw exception as above */;
 
+	CGContextRestoreGState(self->c);
 	CGPDFContextClose(self->c);
 	CGContextRelease(self->c);
 	self->c = NULL;
@@ -253,6 +255,7 @@ static NSString *albumInfoString(Album *a, BOOL minutesOnly)
 		self->width = wid;
 
 		self->compressedImage = nil;
+		// TODO rename scaledArtworkHeight maybe, and other such cases (like maxImageHeight)
 		self->scaledImageHeight = self->width;
 		if ([a firstArtwork] != nil) {
 			self->compressedImage = compressImage([a firstArtwork]);
@@ -335,26 +338,29 @@ static NSString *albumInfoString(Album *a, BOOL minutesOnly)
 CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 {
 	CFMutableDataRef data;
-	CGDataConsumerRef consumer;
-	CGRect mediaBox;
-	CGContextRef c;
-	NSGraphicsContext *nc, *prev;
-	NSFont *titleFont, *artistFont, *infoFont;
-	NSColor *titleColor, *artistColor, *infoColor;
+	pdfContext *c;
+	NSMutableArray *albumItems;
+	NSFont *albumFont, *artistFont, *infoFont;
+	NSColor *albumColor, *artistColor, *infoColor;
 	CGFloat x, y;
-	NSUInteger i, nPerLine;
+	CGFloat maxImageHeight, maxTextHeight;
+	CGFloat lineHeight;
+	BOOL inPage;
 
 	data = CFDataCreateMutable(NULL, 0);
 	if (data == NULL) {
 		// TODO produce an error
 		return NULL;
 	}
+	c = [[pdfContext alloc] initWithTarget:data
+		pageWidth:p->pageWidth
+		pageHeight:p->pageHeight];
 
 	// TODO switch to an autorelease pool
-	titleFont = [NSFont boldSystemFontOfSize:12];
-	[titleFont retain];
-	titleColor = [NSColor blackColor];
-	[titleColor retain];
+	albumFont = [NSFont boldSystemFontOfSize:12];
+	[albumFont retain];
+	albumColor = [NSColor blackColor];
+	[albumColor retain];
 	artistFont = [NSFont systemFontOfSize:12];
 	[artistFont retain];
 	artistColor = [NSColor blackColor];
@@ -364,121 +370,60 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 	infoColor = [NSColor darkGrayColor];
 	[infoColor retain];
 
-	nPerLine = 1;
-	// TODO make this logic clear somehow
-	for (;;) {
-		CGFloat items;
-		CGFloat paddings;
+	albumItems = [[NSMutableArray alloc] initWithCapacity:[albums count]];
+	maxImageHeight = 0;
+	maxTextHeight = 0;
+	for (Album *a in albumItems) {
+		pdfAlbumItem *item;
 
-		items = p->itemWidth * (CGFloat) nPerLine;
-		paddings = p->padding * (CGFloat) (nPerLine - 1);
-		if ((p->margins + items + p->padding) >= (p->pageWidth - p->margins - p->itemWidth))
-			break;
-		nPerLine++;
+		item = [[pdfAlbumItem alloc] initWithAlbum:a
+			width:p->itemWidth
+			minutesOnly:p->minutesOnly
+			albumFont:albumFont
+			albumColor:albumColor
+			artistFont:artistFont
+			artistColor:artistColor
+			infoFont:infoFont
+			infoColor:infoColor];
+		if (maxImageHeight < [item scaledImageHeight])
+			maxImageHeight = [item scaledImageHeight];
+		if (maxTextHeight < [item totalTextHeight])
+			maxTextHeight = [item totalTextHeight];
+		[albumItems addObject:item];
+		[item release];
 	}
+	lineHeight = maxImageHeight + artworkTextPadding + maxTextHeight;
 
-	CGContextSaveGState(c);
-	i = 0;
-	nc = nil;
-	while (i < [albums count]) {
-		NSRange range;
-		NSArray *line;
-		CGFloat lineHeight;
-		CGFloat maxArtworkHeight, maxTextHeight;
-		NSMutableArray *compressedArtworks, *scaledSizes;
-		NSMutableArray *titleCSLs, *artistCSLs, *infoCSLs;
-		NSUInteger j;
-
-		// get this line's albums
-		range.location = i;
-		range.length = nPerLine;
-		if ((range.location + range.length) >= [albums count])
-			range.length = [albums count] - range.location;
-		line = [albums subarrayWithRange:range];
-		// TODO switch to an autorelease pool
-		[line retain];
-
-		// figure out how much vertical space we need
-		maxArtworkHeight = 0;
-		for (j = 0; j < [line count]; j++) {
-			id obj;
-			NSValue *v;
-			CGFloat height;
-
-			// make the no-artwork space square
-			height = p->itemWidth;
-			obj = [scaledSizes objectAtIndex:j];
-			if (obj != [NSNull null]) {
-				v = (NSValue *) obj;
-				height = [v sizeValue].height;
-			}
-			if (maxArtworkHeight < height)
-				maxArtworkHeight = height;
-		}
-		maxTextHeight = 0;
-		for (j = 0; j < [line count]; j++) {
-			if (maxTextHeight <= h)
-				maxTextHeight = h;
-		}
-		lineHeight = maxArtworkHeight + artworkTextPadding + maxTextHeight;
-
+	inPage = NO;
+	for (pdfAlbumItem *item in items) {
 		// set up a page if needed
-		if (nc != nil && (y + lineHeight) >= (p->pageHeight - p->margins)) {
-			endPageContext(c, nc, prev);
-			nc = nil;
-			prev = nil;
+		if (inPage && (y + lineHeight) >= (p->pageHeight - p->margins)) {
+			[c endPage];
+			inPage = NO;
 		}
-		if (nc == nil) {
-			nc = mkPageContext(c, &prev, p->pageHeight);
+		if (!inPage) {
+			inPage = YES;
+			[c beginPage];
+			x = p->margins;
 			y = p->margins;
 		}
 
-		// lay out the artworks
-		x = p->margins;
-		for (j = 0; j < [line count]; j++) {
-			id obj;
-			NSImage *img;
-			NSValue *v;
-			NSRect r;
+		[item drawAtPoint:NSMakePoint(x, y)
+			withMaxArtworkHeight:maxImageHeight];
+		x += p->itemWidth;
 
-			r.origin.x = x;
-			r.origin.y = y;
-			obj = [compressedArtworks objectAtIndex:j];
-			if (obj == [NSNull null])
-				/* TODO draw a default image here */;
-			else {x}
-			x += p->itemWidth + p->padding;
+		x += p->padding;
+		// move to the next line if needed
+		if ((x + p->itemWidth) >= (p->pageWidth - p->margins)) {
+			x = p->margins;
+			y += lineHeight;
+			y += p->padding;
 		}
-		y += maxArtworkHeight;
-
-		y += artworkTextPadding;
-
-		// lay out the texts
-		x = p->margins;
-		for (j = 0; j < [line count]; j++) {
-			CSL *csl;
-			CGFloat cy;
-
-			x += p->itemWidth + p->padding;
-		}
-		y += maxTextHeight;
-
-		y += p->padding;
-		i += [line count];
-
-		[infoCSLs release];
-		[artistCSLs release];
-		[titleCSLs release];
-		[scaledSizes release];
-		[compressedArtworks release];
-		[line release];
 	}
-	if (nc != nil) {
-		endPageContext(c, nc, prev);
-		nc = nil;
-		prev = nil;
-	}
-	CGContextRestoreGState(c);
+	if (inPage)
+		[c endPage];
+
+	[albumItems release];
 
 	[infoColor release];
 	[infoFont release];
@@ -487,5 +432,7 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 	[titleColor release];
 	[titleFont release];
 
+	[c end];
+	[c release];
 	return data;
 }
