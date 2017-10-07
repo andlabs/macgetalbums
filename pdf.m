@@ -209,6 +209,40 @@ static NSImage *compressImage(NSImage *artwork)
 	return [[NSImage alloc] initWithData:compressedData];
 }
 
+// these are what iTunes v12.7.0.166 uses to decide if an album art is "square enough" or not
+static uint64_t itSquareMinRatioBits = 0x3FECCCCCC0000000;		// ~0.900000
+static double itSquareMinRatio;
+static uint64_t itSquareMaxRatioBits = 0x3FF1C71C79ADD3C4;		// ~1.111111
+static double itSquareMaxRatio;
+static BOOL itSquaresLoaded = NO;
+
+// this implementation avoids strict aliasing issues (thanks GerbilSoft)
+static double float64frombits(uint64_t u)
+{
+	union {
+		uint64_t u;
+		double d;
+	} x;
+
+	x.u = u;
+	return x.d;
+}
+
+static BOOL isSquareEnough(NSSize size)
+{
+	CGFloat cgratio;
+	double ratio;
+
+	if (!itSquaresLoaded) {
+		itSquaresLoaded = YES;
+		itSquareMinRatio = float64frombits(itSquareMinRatioBits);
+		itSquareMaxRatio = float64frombits(itSquareMaxRatioBits);
+	}
+	cgratio = size.width / size.height;
+	ratio = (double) cgratio;
+	return (ratio >= itSquareMinRatio) && (ratio < itSquareMaxRatio);
+}
+
 static CGFloat scaleHeight(NSSize orig, CGFloat newWidth)
 {
 	return (orig.height * newWidth) / orig.width;
@@ -258,8 +292,15 @@ static NSString *albumInfoString(Album *a, BOOL minutesOnly)
 		// TODO rename scaledArtworkHeight maybe, and other such cases (like maxImageHeight)
 		self->scaledImageHeight = self->width;
 		if ([a firstArtwork] != nil) {
+			NSSize size;
+
 			self->compressedImage = compressImage([a firstArtwork]);
-			self->scaledImageHeight = scaleHeight([self->compressedImage size], self->width);
+			// TODO make this an option
+			size = [self->compressedImage size];
+			if (isSquareEnough(size))
+				self->scaledImageHeight = self->width;
+			else
+				self->scaledImageHeight = scaleHeight([self->compressedImage size], self->width);
 		}
 
 		self->albumCSL = [[CSL alloc] initWithText:[a album]
