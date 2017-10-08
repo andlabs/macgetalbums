@@ -194,6 +194,7 @@ out:
 	NSFont *infoFont;
 	NSColor *infoColor;
 }
+- (id)initWithFamily:(const char *)family;
 - (NSFont *)albumFont;
 - (NSColor *)albumColor;
 - (NSFont *)artistFont;
@@ -204,22 +205,35 @@ out:
 
 @implementation pdfFontSet
 
-- (id)init
+- (id)initWithFamily:(const char *)family
 {
 	self = [super init];
 	if (self)
 		@autoreleasepool {
 			self->albumFont = [NSFont boldSystemFontOfSize:12];
-			[self->albumFont retain];
 			self->albumColor = [NSColor blackColor];
-			[self->albumColor retain];
 			self->artistFont = [NSFont systemFontOfSize:12];
-			[self->artistFont retain];
 			self->artistColor = [NSColor blackColor];
-			[self->artistColor retain];
 			self->infoFont = [NSFont systemFontOfSize:11];
-			[self->infoFont retain];
 			self->infoColor = [NSColor darkGrayColor];
+
+			if (family != NULL) {
+				NSString *name;
+				NSFontDescriptor *fontdesc;
+
+				name = [NSString stringWithUTF8String:family];
+				fontdesc = [NSFontDescriptor fontDescriptorWithFontAttributes:nil];
+				fontdesc = [fontdesc fontDescriptorWithFamily:name];
+				self->albumFont = [NSFont fontWithDescriptor:[fontdesc fontDescriptorWithSymbolicTraits:NSFontBoldTrait] size:12];
+				self->artistFont = [NSFont fontWithDescriptor:fontdesc size:12];
+				self->infoFont = [NSFont fontWithDescriptor:fontdesc size:11];
+			}
+
+			[self->albumFont retain];
+			[self->albumColor retain];
+			[self->artistFont retain];
+			[self->artistColor retain];
+			[self->infoFont retain];
 			[self->infoColor retain];
 		}
 	return self;
@@ -478,7 +492,7 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 		pageWidth:p->pageWidth
 		pageHeight:p->pageHeight];
 
-	fs = [[pdfFontSet alloc] init];
+	fs = [[pdfFontSet alloc] initWithFamily:p->fontFamily];
 	albumItems = [[NSMutableArray alloc] initWithCapacity:[albums count]];
 	maxImageHeight = 0;
 	maxTextHeight = 0;

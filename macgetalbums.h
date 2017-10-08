@@ -208,6 +208,7 @@ struct makePDFParams {
 	CGFloat padding;
 	// TODO rename this to albumWidth?
 	CGFloat itemWidth;
+	const char *fontFamily;
 	BOOL debugLayout;
 };
 extern CFDataRef makePDF(NSArray *albums, struct makePDFParams *p);

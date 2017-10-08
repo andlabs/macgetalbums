@@ -39,6 +39,8 @@ AddCGFloatFlag(Options, pdfPadding,
 	@"pdfpadding", 18.0, @"padding between albums in both directions in the output PDF in units of 1/72-inch points (default 18.0 for 0.25in)")
 AddCGFloatFlag(Options, pdfItemWidth,
 	@"pdfitemwidth", 108.0, @"width of albums in the output PDF in units of 1/72-inch points (default 108.0 for 1.5in)")
+AddStringFlag(Options, pdfFontFamily,
+	@"pdffontfamily", NULL, @"font family to use in the output PDF for all text (defaults to the system control font)")
 AddBoolFlag(Options, pdfDebugLayout,
 	@"pdfdebuglayout", @"draws guide lines in the output PDF to debug layout")
 
@@ -283,6 +285,7 @@ int main(int argc, char *argv[])
 		p.margins = [options pdfMargins];
 		p.padding = [options pdfPadding];
 		p.itemWidth = [options pdfItemWidth];
+		p.fontFamily = [options pdfFontFamily];
 		p.debugLayout = [options pdfDebugLayout];
 		data = makePDF(albums, &p);
 		buf = CFDataGetBytePtr(data);
