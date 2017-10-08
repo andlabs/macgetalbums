@@ -29,3 +29,4 @@ TODOs:
 - fine-tune system requirements
 - see if we can dynamically load Security.framework
 - get the more shell-independent codesign makefile check from my IRC logs
+- run with `OBJC_DEBUG_MISSING_POOLS=YES` and other `OBJC_HELP=YES` options
