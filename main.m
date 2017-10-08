@@ -277,6 +277,7 @@ int main(int argc, char *argv[])
 		CFDataRef data;
 		const UInt8 *buf;
 		CFIndex len;
+		ssize_t n;
 
 		memset(&p, 0, sizeof (struct makePDFParams));
 		p.minutesOnly = [options minutes];
@@ -292,7 +293,7 @@ int main(int argc, char *argv[])
 		len = CFDataGetLength(data);
 		// TODO check error
 		// TODO handle short writes by repeatedly calling write() (see also https://stackoverflow.com/questions/32683086/handling-incomplete-write-calls)
-		write(1, buf, len);
+		n = write(1, buf, len);
 		CFRelease(data);
 		goto done;
 	}
