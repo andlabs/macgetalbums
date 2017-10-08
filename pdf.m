@@ -186,6 +186,88 @@ out:
 
 @end
 
+@interface pdfFontSet : NSObject {
+	NSFont *albumFont;
+	NSColor *albumColor;
+	NSFont *artistFont;
+	NSColor *artistColor;
+	NSFont *infoFont;
+	NSColor *infoColor;
+}
+- (NSFont *)albumFont;
+- (NSColor *)albumColor;
+- (NSFont *)artistFont;
+- (NSColor *)artistColor;
+- (NSFont *)infoFont;
+- (NSColor *)infoColor;
+@end
+
+@implementation pdfFontSet
+
+- (id)init
+{
+	self = [super init];
+	if (self)
+		@autoreleasepool {
+			self->albumFont = [NSFont boldSystemFontOfSize:12];
+			[self->albumFont retain];
+			self->albumColor = [NSColor blackColor];
+			[self->albumColor retain];
+			self->artistFont = [NSFont systemFontOfSize:12];
+			[self->artistFont retain];
+			self->artistColor = [NSColor blackColor];
+			[self->artistColor retain];
+			self->infoFont = [NSFont systemFontOfSize:11];
+			[self->infoFont retain];
+			self->infoColor = [NSColor darkGrayColor];
+			[self->infoColor retain];
+		}
+	return self;
+}
+
+- (void)dealloc
+{
+	[self->infoColor release];
+	[self->infoFont release];
+	[self->artistColor release];
+	[self->artistFont release];
+	[self->albumColor release];
+	[self->albumFont release];
+	[super dealloc];
+}
+
+- (NSFont *)albumFont
+{
+	return self->albumFont;
+}
+
+- (NSColor *)albumColor
+{
+	return self->albumColor;
+}
+
+- (NSFont *)artistFont
+{
+	return self->artistFont;
+}
+
+- (NSColor *)artistColor
+{
+	return self->artistColor;
+}
+
+- (NSFont *)infoFont
+{
+	return self->infoFont;
+}
+
+- (NSColor *)infoColor
+{
+	return self->infoColor;
+}
+
+@end
+
 // you own the returned image
 static NSImage *compressImage(NSImage *artwork)
 {
@@ -272,7 +354,7 @@ static NSString *albumInfoString(Album *a, BOOL minutesOnly)
 	CSL *artistCSL;
 	CSL *infoCSL;
 }
-- (id)initWithAlbum:(Album *)a width:(CGFloat)wid minutesOnly:(BOOL)minutesOnly albumFont:(NSFont *)albumFont albumColor:(NSColor *)albumColor artistFont:(NSFont *)artistFont artistColor:(NSColor *)artistColor infoFont:(NSFont *)infoFont infoColor:(NSColor *)infoColor;
+- (id)initWithAlbum:(Album *)a width:(CGFloat)wid minutesOnly:(BOOL)minutesOnly fontSet:(pdfFontSet *)fs;
 - (CGFloat)scaledImageHeight;
 - (CGFloat)totalTextHeight;
 - (void)drawAtPoint:(NSPoint)pt withMaxArtworkHeight:(CGFloat)artHeight;
@@ -280,7 +362,7 @@ static NSString *albumInfoString(Album *a, BOOL minutesOnly)
 
 @implementation pdfAlbumItem
 
-- (id)initWithAlbum:(Album *)a width:(CGFloat)wid minutesOnly:(BOOL)minutesOnly albumFont:(NSFont *)albumFont albumColor:(NSColor *)albumColor artistFont:(NSFont *)artistFont artistColor:(NSColor *)artistColor infoFont:(NSFont *)infoFont infoColor:(NSColor *)infoColor
+- (id)initWithAlbum:(Album *)a width:(CGFloat)wid minutesOnly:(BOOL)minutesOnly fontSet:(pdfFontSet *)fs
 {
 	self = [super init];
 	if (self) {
@@ -305,17 +387,17 @@ static NSString *albumInfoString(Album *a, BOOL minutesOnly)
 
 		self->albumCSL = [[CSL alloc] initWithText:[a album]
 			width:self->width
-			font:albumFont
-			color:albumColor];
+			font:[fs albumFont]
+			color:[fs albumColor]];
 		self->artistCSL = [[CSL alloc] initWithText:[a artist]
 			width:self->width
-			font:artistFont
-			color:artistColor];
+			font:[fs artistFont]
+			color:[fs artistColor]];
 		infostr = albumInfoString(a, minutesOnly);
 		self->infoCSL = [[CSL alloc] initWithText:infostr
 			width:self->width
-			font:infoFont
-			color:infoColor];
+			font:[fs infoFont]
+			color:[fs infoColor]];
 		[infostr release];
 	}
 	return self;
@@ -381,8 +463,7 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 	CFMutableDataRef data;
 	pdfContext *c;
 	NSMutableArray *albumItems;
-	NSFont *albumFont, *artistFont, *infoFont;
-	NSColor *albumColor, *artistColor, *infoColor;
+	pdfFontSet *fs;
 	CGFloat x, y;
 	CGFloat maxImageHeight, maxTextHeight;
 	CGFloat lineHeight;
@@ -397,20 +478,7 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 		pageWidth:p->pageWidth
 		pageHeight:p->pageHeight];
 
-	// TODO switch to an autorelease pool
-	albumFont = [NSFont boldSystemFontOfSize:12];
-	[albumFont retain];
-	albumColor = [NSColor blackColor];
-	[albumColor retain];
-	artistFont = [NSFont systemFontOfSize:12];
-	[artistFont retain];
-	artistColor = [NSColor blackColor];
-	[artistColor retain];
-	infoFont = [NSFont systemFontOfSize:11];
-	[infoFont retain];
-	infoColor = [NSColor darkGrayColor];
-	[infoColor retain];
-
+	fs = [[pdfFontSet alloc] init];
 	albumItems = [[NSMutableArray alloc] initWithCapacity:[albums count]];
 	maxImageHeight = 0;
 	maxTextHeight = 0;
@@ -420,12 +488,7 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 		item = [[pdfAlbumItem alloc] initWithAlbum:a
 			width:p->itemWidth
 			minutesOnly:p->minutesOnly
-			albumFont:albumFont
-			albumColor:albumColor
-			artistFont:artistFont
-			artistColor:artistColor
-			infoFont:infoFont
-			infoColor:infoColor];
+			fontSet:fs];
 		if (maxImageHeight < [item scaledImageHeight])
 			maxImageHeight = [item scaledImageHeight];
 		if (maxTextHeight < [item totalTextHeight])
@@ -522,13 +585,7 @@ CFDataRef makePDF(NSArray *albums, struct makePDFParams *p)
 		[c endPage];
 
 	[albumItems release];
-
-	[infoColor release];
-	[infoFont release];
-	[artistColor release];
-	[artistFont release];
-	[albumColor release];
-	[albumFont release];
+	[fs release];
 
 	[c end];
 	[c release];
